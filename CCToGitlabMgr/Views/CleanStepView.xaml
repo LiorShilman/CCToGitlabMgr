@@ -1,0 +1,81 @@
+<UserControl x:Class="CCToGitlabMgr.Views.CleanStepView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock Style="{StaticResource SectionTitle}">
+            <Run Text="03" Foreground="{StaticResource AccentBrush}" FontSize="24"/>
+            <Run Text="  Clean — Remove Artifacts"/>
+        </TextBlock>
+        <TextBlock Style="{StaticResource SectionDesc}" Text="Remove ClearCase metadata and build artifacts before the first commit."/>
+
+        <!-- Scan -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Scan First" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,12"/>
+                <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" Margin="0,0,0,12"
+                           Text="Scan the staging folder to see what will be removed, before actually deleting anything."/>
+                <Button Content="Scan for Artifacts" Command="{Binding ScanArtifactsCommand}"
+                        Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left"/>
+            </StackPanel>
+        </Border>
+
+        <!-- ClearCase Cleanup -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="ClearCase Artifacts" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,8"/>
+                <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="13" Margin="0,0,0,12"
+                           Text="Removes: lost+found/, .cc_data/, *.keep, *.contrib, view.dat, .copyarea.*"/>
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="Clean ClearCase Files" Command="{Binding CleanClearCaseCommand}"
+                            Style="{StaticResource AccentButton}" Margin="0,0,12,0"/>
+                    <TextBlock VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource Text2Brush}">
+                        <Run Text="Removed: "/>
+                        <Run Text="{Binding Context.ClearCaseFilesRemoved, Mode=OneWay}" Foreground="{StaticResource AccentHiBrush}" FontWeight="Bold"/>
+                        <Run Text=" items"/>
+                    </TextBlock>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Build Cleanup -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Build Artifacts" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,8"/>
+                <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="13" Margin="0,0,0,12"
+                           Text="Removes: bin/, obj/, Debug/, Release/, .vs/, packages/, node_modules/, *.suo, *.user"/>
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="Clean Build Artifacts" Command="{Binding CleanBuildCommand}"
+                            Style="{StaticResource AccentButton}" Margin="0,0,12,0"/>
+                    <TextBlock VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource Text2Brush}">
+                        <Run Text="Removed: "/>
+                        <Run Text="{Binding Context.BuildArtifactsRemoved, Mode=OneWay}" Foreground="{StaticResource AccentHiBrush}" FontWeight="Bold"/>
+                        <Run Text=" items  |  Size after: "/>
+                        <Run Text="{Binding Context.ProjectSizeAfter, Mode=OneWay}" Foreground="{StaticResource OkBrush}" FontWeight="Bold"/>
+                    </TextBlock>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Audit -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Audit — Large &amp; Binary Files" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,8"/>
+                <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="13" Margin="0,0,0,12"
+                           Text="Find files larger than 10MB and binary files (dll/exe/pdb) that might not belong in the repo."/>
+                <Button Content="Run Audit" Command="{Binding AuditFilesCommand}"
+                        Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Warning -->
+        <Border Background="#14FBBF24" BorderBrush="#4DFBBF24" BorderThickness="1" CornerRadius="8" Padding="16,12">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="!" FontWeight="Bold" Foreground="{StaticResource WarnBrush}" FontSize="16" Margin="0,0,12,0" VerticalAlignment="Top"/>
+                <TextBlock TextWrapping="Wrap" Foreground="{StaticResource Text1Brush}" FontSize="13">
+                    <Run FontWeight="Bold" Foreground="{StaticResource Text0Brush}">Caution with Debug/Release folders: </Run>
+                    <Run>If your project has source folders named Debug or Release (rare), check the scan output before cleaning.</Run>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

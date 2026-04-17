@@ -1,0 +1,152 @@
+<UserControl x:Class="CCToGitlabMgr.Views.GitignoreStepView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock Style="{StaticResource SectionTitle}">
+            <Run Text="04" Foreground="{StaticResource AccentBrush}" FontSize="24"/>
+            <Run Text="  Gitignore — Select Template"/>
+        </TextBlock>
+        <TextBlock Style="{StaticResource SectionDesc}" Text="Choose the right .gitignore template based on your Visual Studio version."/>
+
+        <!-- Template Selection -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Template Selection" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,16"/>
+
+                <!-- VS Version Cards -->
+                <UniformGrid Columns="4" Margin="0,0,0,16">
+                    <RadioButton GroupName="gitignore" IsChecked="{Binding Context.GitignoreTemplate, Converter={StaticResource EqualConv}, ConverterParameter=VS2010}" Margin="0,0,8,0" Cursor="Hand">
+                        <RadioButton.Template>
+                            <ControlTemplate TargetType="RadioButton">
+                                <Border x:Name="card" CornerRadius="10" Padding="16" BorderThickness="2"
+                                        BorderBrush="{StaticResource BorderBrush}" Background="{StaticResource Bg2Brush}">
+                                    <StackPanel>
+                                        <TextBlock Text="2010" FontSize="32" FontWeight="Bold" Foreground="#FF8661C5"/>
+                                        <TextBlock Text="Visual Studio 2010" FontSize="12" Foreground="{StaticResource Text1Brush}" Margin="0,4,0,4"/>
+                                        <TextBlock Text="gitignore-vs2010" FontFamily="{StaticResource MonoFont}" FontSize="10" Foreground="{StaticResource Text3Brush}"
+                                                   Background="{StaticResource Bg0Brush}" Padding="4,2"/>
+                                    </StackPanel>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsChecked" Value="True">
+                                        <Setter TargetName="card" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                        <Setter TargetName="card" Property="Background">
+                                            <Setter.Value>
+                                                <SolidColorBrush Color="#18FF6B35"/>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </RadioButton.Template>
+                    </RadioButton>
+
+                    <RadioButton GroupName="gitignore" IsChecked="{Binding Context.GitignoreTemplate, Converter={StaticResource EqualConv}, ConverterParameter=VS2015-2019}" Margin="0,0,8,0" Cursor="Hand">
+                        <RadioButton.Template>
+                            <ControlTemplate TargetType="RadioButton">
+                                <Border x:Name="card" CornerRadius="10" Padding="16" BorderThickness="2"
+                                        BorderBrush="{StaticResource BorderBrush}" Background="{StaticResource Bg2Brush}">
+                                    <StackPanel>
+                                        <TextBlock Text="2015/19" FontSize="32" FontWeight="Bold" Foreground="#FF8661C5"/>
+                                        <TextBlock Text="Visual Studio 2015+2019" FontSize="12" Foreground="{StaticResource Text1Brush}" Margin="0,4,0,4"/>
+                                        <TextBlock Text="gitignore-vs2015-2019" FontFamily="{StaticResource MonoFont}" FontSize="10" Foreground="{StaticResource Text3Brush}"
+                                                   Background="{StaticResource Bg0Brush}" Padding="4,2"/>
+                                    </StackPanel>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsChecked" Value="True">
+                                        <Setter TargetName="card" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                        <Setter TargetName="card" Property="Background">
+                                            <Setter.Value>
+                                                <SolidColorBrush Color="#18FF6B35"/>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </RadioButton.Template>
+                    </RadioButton>
+
+                    <RadioButton GroupName="gitignore" IsChecked="{Binding Context.GitignoreTemplate, Converter={StaticResource EqualConv}, ConverterParameter=VS2022}" Margin="0,0,8,0" Cursor="Hand">
+                        <RadioButton.Template>
+                            <ControlTemplate TargetType="RadioButton">
+                                <Border x:Name="card" CornerRadius="10" Padding="16" BorderThickness="2"
+                                        BorderBrush="{StaticResource BorderBrush}" Background="{StaticResource Bg2Brush}">
+                                    <StackPanel>
+                                        <TextBlock Text="2022" FontSize="32" FontWeight="Bold" Foreground="#FF8661C5"/>
+                                        <TextBlock Text="Visual Studio 2022" FontSize="12" Foreground="{StaticResource Text1Brush}" Margin="0,4,0,4"/>
+                                        <TextBlock Text="gitignore-vs2022" FontFamily="{StaticResource MonoFont}" FontSize="10" Foreground="{StaticResource Text3Brush}"
+                                                   Background="{StaticResource Bg0Brush}" Padding="4,2"/>
+                                    </StackPanel>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsChecked" Value="True">
+                                        <Setter TargetName="card" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                        <Setter TargetName="card" Property="Background">
+                                            <Setter.Value>
+                                                <SolidColorBrush Color="#18FF6B35"/>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </RadioButton.Template>
+                    </RadioButton>
+
+                    <RadioButton GroupName="gitignore" IsChecked="{Binding Context.GitignoreTemplate, Converter={StaticResource EqualConv}, ConverterParameter=Angular}" Margin="0,0,0,0" Cursor="Hand">
+                        <RadioButton.Template>
+                            <ControlTemplate TargetType="RadioButton">
+                                <Border x:Name="card" CornerRadius="10" Padding="16" BorderThickness="2"
+                                        BorderBrush="{StaticResource BorderBrush}" Background="{StaticResource Bg2Brush}">
+                                    <StackPanel>
+                                        <TextBlock Text="WEB" FontSize="32" FontWeight="Bold" Foreground="#FFEF4444"/>
+                                        <TextBlock Text="Angular / React / Node" FontSize="12" Foreground="{StaticResource Text1Brush}" Margin="0,4,0,4"/>
+                                        <TextBlock Text="gitignore-angular" FontFamily="{StaticResource MonoFont}" FontSize="10" Foreground="{StaticResource Text3Brush}"
+                                                   Background="{StaticResource Bg0Brush}" Padding="4,2"/>
+                                    </StackPanel>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsChecked" Value="True">
+                                        <Setter TargetName="card" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                        <Setter TargetName="card" Property="Background">
+                                            <Setter.Value>
+                                                <SolidColorBrush Color="#18FF6B35"/>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </RadioButton.Template>
+                    </RadioButton>
+                </UniformGrid>
+
+                <!-- Web addition checkbox -->
+                <CheckBox Style="{StaticResource DarkCheckBox}" IsChecked="{Binding Context.IncludeWebGitignore}" Margin="0,0,0,16">
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13">
+                        <Run Text="Also append Web/Angular rules"/>
+                        <Run Text=" (for projects with a front-end part)" Foreground="{StaticResource Text2Brush}"/>
+                    </TextBlock>
+                </CheckBox>
+
+                <!-- Actions -->
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="Preview Template" Command="{Binding PreviewGitignoreCommand}"
+                            Style="{StaticResource SecondaryButton}" Margin="0,0,12,0"/>
+                    <Button Content="Place .gitignore in Project" Command="{Binding PlaceGitignoreCommand}"
+                            Style="{StaticResource AccentButton}"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Info -->
+        <Border Background="#143B82F6" BorderBrush="#4D3B82F6" BorderThickness="1" CornerRadius="8" Padding="16,12">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="i" FontWeight="Bold" Foreground="#FF3B82F6" FontSize="16" Margin="0,0,12,0" VerticalAlignment="Top"/>
+                <TextBlock TextWrapping="Wrap" Foreground="{StaticResource Text1Brush}" FontSize="13">
+                    <Run FontWeight="Bold" Foreground="{StaticResource Text0Brush}">.gitignore must be at the project root, </Run>
+                    <Run>at the same level as the .sln file. The template auto-detected from Step 2 is pre-selected above.</Run>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

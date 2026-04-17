@@ -1,0 +1,79 @@
+<UserControl x:Class="CCToGitlabMgr.Views.PrepareStepView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock Style="{StaticResource SectionTitle}">
+            <Run Text="02" Foreground="{StaticResource AccentBrush}" FontSize="24"/>
+            <Run Text="  Prepare — Copy to Staging"/>
+        </TextBlock>
+        <TextBlock Style="{StaticResource SectionDesc}" Text="Copy your ClearCase source to a staging folder. Never work directly on the original sources."/>
+
+        <!-- Source Path -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Source Folder (ClearCase)" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,12"/>
+                <TextBlock Style="{StaticResource FieldLabel}" Text="Path to the latest ClearCase snapshot:"/>
+                <DockPanel Margin="0,0,0,12">
+                    <Button DockPanel.Dock="Right" Content="Browse..." Command="{Binding BrowseSourceCommand}"
+                            Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" Padding="14,8"/>
+                    <TextBox Style="{StaticResource DarkTextBox}" Text="{Binding Context.SourcePath, UpdateSourceTrigger=PropertyChanged}"/>
+                </DockPanel>
+
+                <TextBlock Style="{StaticResource FieldLabel}" Text="Staging Folder (working copy):"/>
+                <DockPanel Margin="0,0,0,12">
+                    <Button DockPanel.Dock="Right" Content="Browse..." Command="{Binding BrowseStagingCommand}"
+                            Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" Padding="14,8"/>
+                    <TextBox Style="{StaticResource DarkTextBox}" Text="{Binding Context.StagingPath, UpdateSourceTrigger=PropertyChanged}"/>
+                </DockPanel>
+
+                <TextBlock Style="{StaticResource FieldLabel}" Text="Project Name:"/>
+                <TextBox Style="{StaticResource DarkTextBox}" Text="{Binding Context.ProjectName, UpdateSourceTrigger=PropertyChanged}" Width="300" HorizontalAlignment="Left" Margin="0,0,0,16"/>
+
+                <Button Content="Copy to Staging" Command="{Binding CopyToStagingCommand}"
+                        Style="{StaticResource AccentButton}" HorizontalAlignment="Left"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Detection Results -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Auto-Detection Results" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,12"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="VS Version:" Foreground="{StaticResource Text2Brush}" FontSize="13" Margin="0,4,20,4"/>
+                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Context.VsVersion}" Foreground="{StaticResource AccentHiBrush}" FontSize="13" FontWeight="Bold" Margin="0,4"/>
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text=".sln File:" Foreground="{StaticResource Text2Brush}" FontSize="13" Margin="0,4,20,4"/>
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Context.SlnFilePath}" Foreground="{StaticResource Text1Brush}" FontSize="12" FontFamily="{StaticResource MonoFont}" Margin="0,4" TextTrimming="CharacterEllipsis"/>
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Gitignore:" Foreground="{StaticResource Text2Brush}" FontSize="13" Margin="0,4,20,4"/>
+                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Context.GitignoreTemplate}" Foreground="{StaticResource OkBrush}" FontSize="13" FontWeight="Bold" Margin="0,4"/>
+
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Size:" Foreground="{StaticResource Text2Brush}" FontSize="13" Margin="0,4,20,4"/>
+                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Context.ProjectSizeBefore}" Foreground="{StaticResource Text1Brush}" FontSize="13" Margin="0,4"/>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- Golden Rule -->
+        <Border Background="#143ECF8E" BorderBrush="#4D3ECF8E" BorderThickness="1" CornerRadius="8" Padding="16,12" Margin="0,0,0,16">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="&#x2713;" FontWeight="Bold" Foreground="{StaticResource OkBrush}" FontSize="16" Margin="0,0,12,0" VerticalAlignment="Top"/>
+                <TextBlock TextWrapping="Wrap" Foreground="{StaticResource Text1Brush}" FontSize="13">
+                    <Run FontWeight="Bold" Foreground="{StaticResource Text0Brush}">Golden Rule: </Run>
+                    <Run>Never work directly on _sources. Copy to _staging first. If something goes wrong, _sources stays clean.</Run>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

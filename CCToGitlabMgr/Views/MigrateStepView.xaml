@@ -1,0 +1,92 @@
+<UserControl x:Class="CCToGitlabMgr.Views.MigrateStepView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock Style="{StaticResource SectionTitle}">
+            <Run Text="06" Foreground="{StaticResource AccentBrush}" FontSize="24"/>
+            <Run Text="  Migrate — Init, Commit, Push"/>
+        </TextBlock>
+        <TextBlock Style="{StaticResource SectionDesc}" Text="The moment of truth — from clean staging to your first commit on GitLab."/>
+
+        <!-- Dry Run -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Pre-flight Check" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,8"/>
+                <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="13" Margin="0,0,0,12"
+                           Text="Check which files will be committed. Make sure .gitignore is doing its job correctly."/>
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="Dry Run — What will be committed?" Command="{Binding DryRunCheckCommand}"
+                            Style="{StaticResource SecondaryButton}" Margin="0,0,12,0"/>
+                    <TextBlock VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource Text2Brush}">
+                        <Run Text="Files: "/>
+                        <Run Text="{Binding Context.TotalFilesForCommit, Mode=OneWay}" Foreground="{StaticResource AccentHiBrush}" FontWeight="Bold"/>
+                    </TextBlock>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Commit Message -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Commit Message" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,12"/>
+                <TextBlock Style="{StaticResource FieldLabel}" Text="First commit message (leave empty for auto-generated):"/>
+                <TextBox Style="{StaticResource DarkTextBox}" Text="{Binding Context.CommitMessage, UpdateSourceTrigger=PropertyChanged}"
+                         AcceptsReturn="True" TextWrapping="Wrap" Height="100" VerticalScrollBarVisibility="Auto"
+                         FontFamily="{StaticResource MonoFont}" FontSize="12"/>
+                <TextBlock Foreground="{StaticResource Text3Brush}" FontSize="11" Margin="0,4,0,0"
+                           Text="Auto: &quot;Initial import from ClearCase (VS{version})&quot; with migration metadata"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Summary & Execute -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Migration Summary" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,12"/>
+
+                <Grid Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="140"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Staging path:" Foreground="{StaticResource Text2Brush}" FontSize="13" Margin="0,3"/>
+                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Context.StagingPath}" Foreground="{StaticResource Text1Brush}" FontSize="12" FontFamily="{StaticResource MonoFont}" Margin="0,3" TextTrimming="CharacterEllipsis"/>
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Remote URL:" Foreground="{StaticResource Text2Brush}" FontSize="13" Margin="0,3"/>
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Context.RemoteUrl}" Foreground="{StaticResource AccentHiBrush}" FontSize="12" FontFamily="{StaticResource MonoFont}" Margin="0,3" TextTrimming="CharacterEllipsis"/>
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Branch:" Foreground="{StaticResource Text2Brush}" FontSize="13" Margin="0,3"/>
+                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Context.DefaultBranch}" Foreground="{StaticResource OkBrush}" FontSize="13" FontWeight="Bold" Margin="0,3"/>
+
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="VS Version:" Foreground="{StaticResource Text2Brush}" FontSize="13" Margin="0,3"/>
+                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Context.VsVersion}" Foreground="{StaticResource Text1Brush}" FontSize="13" Margin="0,3"/>
+
+                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Project size:" Foreground="{StaticResource Text2Brush}" FontSize="13" Margin="0,3"/>
+                    <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding Context.ProjectSizeAfter}" Foreground="{StaticResource Text1Brush}" FontSize="13" Margin="0,3"/>
+                </Grid>
+
+                <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" Margin="0,0,0,16" TextWrapping="Wrap">
+                    <Run FontWeight="Bold">This will run:</Run><Run> git init > branch -M main > add . > commit > remote add > push -u</Run>
+                </TextBlock>
+
+                <Button Content="Run Migration Now" Command="{Binding RunMigrationCommand}"
+                        Style="{StaticResource AccentButton}" FontSize="15" Padding="28,12"
+                        HorizontalAlignment="Left"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Info -->
+        <Border Background="#143B82F6" BorderBrush="#4D3B82F6" BorderThickness="1" CornerRadius="8" Padding="16,12">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="i" FontWeight="Bold" Foreground="#FF3B82F6" FontSize="16" Margin="0,0,12,0" VerticalAlignment="Top"/>
+                <TextBlock TextWrapping="Wrap" Foreground="{StaticResource Text1Brush}" FontSize="13">
+                    <Run FontWeight="Bold" Foreground="{StaticResource Text0Brush}">First commit is special. </Run>
+                    <Run>Include where the code came from, the VS version, and the migration date. Developers joining later will appreciate the context.</Run>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

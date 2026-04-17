@@ -1,0 +1,76 @@
+<UserControl x:Class="CCToGitlabMgr.Views.VerifyStepView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock Style="{StaticResource SectionTitle}">
+            <Run Text="07" Foreground="{StaticResource AccentBrush}" FontSize="24"/>
+            <Run Text="  Verify — Fresh Clone Test"/>
+        </TextBlock>
+        <TextBlock Style="{StaticResource SectionDesc}" Text="Clone from GitLab to a fresh folder and verify Build + Run."/>
+
+        <!-- Clone Test -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Fresh Clone Verification" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,12"/>
+
+                <TextBlock Style="{StaticResource FieldLabel}" Text="Verify folder (separate from staging):"/>
+                <DockPanel Margin="0,0,0,12">
+                    <Button DockPanel.Dock="Right" Content="Browse..." Command="{Binding BrowseVerifyCommand}"
+                            Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" Padding="14,8"/>
+                    <TextBox Style="{StaticResource DarkTextBox}" Text="{Binding Context.VerifyPath, UpdateSourceTrigger=PropertyChanged}"/>
+                </DockPanel>
+
+                <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="13" Margin="0,0,0,4">
+                    <Run Text="Remote URL: "/>
+                    <Run Text="{Binding Context.RemoteUrl, Mode=OneWay}" Foreground="{StaticResource AccentHiBrush}" FontFamily="{StaticResource MonoFont}"/>
+                </TextBlock>
+                <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="13" Margin="0,0,0,16">
+                    <Run Text="Will clone to: "/>
+                    <Run Text="{Binding Context.ProjectName, Mode=OneWay}" Foreground="{StaticResource Text1Brush}"/>
+                </TextBlock>
+
+                <Button Content="Clone and Verify" Command="{Binding RunVerifyCommand}"
+                        Style="{StaticResource AccentButton}" HorizontalAlignment="Left"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Manual Steps -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Manual Build Test" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,12"/>
+                <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" TextWrapping="Wrap">
+                    <Run FontWeight="Bold">1.</Run><Run> Open the .sln in the correct Visual Studio version</Run><LineBreak/>
+                    <Run FontWeight="Bold">2.</Run><Run> Allow NuGet package restore if prompted</Run><LineBreak/>
+                    <Run FontWeight="Bold">3.</Run><Run> Build > Clean Solution, then Build > Rebuild Solution</Run><LineBreak/>
+                    <Run FontWeight="Bold">4.</Run><Run> Verify: 0 errors, warnings look normal</Run><LineBreak/>
+                    <Run FontWeight="Bold">5.</Run><Run> Run the project (F5) — verify normal behavior</Run>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <!-- Warning -->
+        <Border Background="#14FBBF24" BorderBrush="#4DFBBF24" BorderThickness="1" CornerRadius="8" Padding="16,12" Margin="0,0,0,16">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="!" FontWeight="Bold" Foreground="{StaticResource WarnBrush}" FontSize="16" Margin="0,0,12,0" VerticalAlignment="Top"/>
+                <TextBlock TextWrapping="Wrap" Foreground="{StaticResource Text1Brush}" FontSize="13">
+                    <Run FontWeight="Bold" Foreground="{StaticResource Text0Brush}">If Build fails: </Run>
+                    <Run>(1) A required file was excluded by .gitignore — edit and update. (2) External DLL references missing — add to libs/ with gitignore exception, or switch to NuGet.</Run>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <!-- Post-migration config -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Post-Migration GitLab Config" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,12"/>
+                <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" TextWrapping="Wrap">
+                    <Run FontWeight="Bold">Protected Branches:</Run><Run> Settings > Repository > Protected Branches — protect main</Run><LineBreak/>
+                    <Run FontWeight="Bold">Default Branch:</Run><Run> Verify main is set as default</Run><LineBreak/>
+                    <Run FontWeight="Bold">Merge Request Settings:</Run><Run> Require approvals if working in a team</Run><LineBreak/>
+                    <Run FontWeight="Bold">CI/CD:</Run><Run> Add .gitlab-ci.yml for automated builds (optional)</Run><LineBreak/>
+                    <Run FontWeight="Bold">README:</Run><Run> Update with build instructions and link to old ClearCase archive</Run>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

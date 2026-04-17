@@ -1,0 +1,57 @@
+<UserControl x:Class="CCToGitlabMgr.Views.GitLabStepView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock Style="{StaticResource SectionTitle}">
+            <Run Text="05" Foreground="{StaticResource AccentBrush}" FontSize="24"/>
+            <Run Text="  GitLab — Project Setup"/>
+        </TextBlock>
+        <TextBlock Style="{StaticResource SectionDesc}" Text="Create an empty project on GitLab and configure the remote URL."/>
+
+        <!-- Manual Creation Guide -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Create Project in GitLab" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,12"/>
+                <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,8">
+                    <Run FontWeight="Bold">1.</Run><Run> Log in to GitLab</Run><LineBreak/>
+                    <Run FontWeight="Bold">2.</Run><Run> Click </Run><Run FontWeight="Bold" Foreground="{StaticResource AccentHiBrush}">New project</Run><Run> > </Run><Run FontWeight="Bold" Foreground="{StaticResource AccentHiBrush}">Create blank project</Run><LineBreak/>
+                    <Run FontWeight="Bold">3.</Run><Run> Fill in: Project name, Group, Visibility</Run><LineBreak/>
+                    <Run FontWeight="Bold">4.</Run><Run> </Run><Run Foreground="{StaticResource DangerBrush}" FontWeight="Bold">UNCHECK "Initialize with a README"</Run><LineBreak/>
+                    <Run FontWeight="Bold">5.</Run><Run> Click </Run><Run FontWeight="Bold" Foreground="{StaticResource AccentHiBrush}">Create project</Run><LineBreak/>
+                    <Run FontWeight="Bold">6.</Run><Run> Copy the Clone URL (HTTPS) and paste it below</Run>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <!-- Remote URL -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Remote URL" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,12"/>
+
+                <TextBlock Style="{StaticResource FieldLabel}" Text="GitLab Clone URL (HTTPS):"/>
+                <TextBox Style="{StaticResource DarkTextBox}" Text="{Binding Context.RemoteUrl, UpdateSourceTrigger=PropertyChanged}"
+                         FontFamily="{StaticResource MonoFont}" Margin="0,0,0,4"/>
+                <TextBlock Text="Example: https://gitlab.com/your-group/project-name.git" Foreground="{StaticResource Text3Brush}" FontSize="11" Margin="0,0,0,16"/>
+
+                <TextBlock Style="{StaticResource FieldLabel}" Text="Authentication Method:"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                    <RadioButton GroupName="auth" Content="HTTPS + Token" IsChecked="{Binding Context.AuthMethod, Converter={StaticResource EqualConv}, ConverterParameter=HTTPS}"
+                                 Foreground="{StaticResource Text1Brush}" FontSize="13" Margin="0,0,20,0" Cursor="Hand"/>
+                    <RadioButton GroupName="auth" Content="SSH Key" IsChecked="{Binding Context.AuthMethod, Converter={StaticResource EqualConv}, ConverterParameter=SSH}"
+                                 Foreground="{StaticResource Text1Brush}" FontSize="13" Cursor="Hand"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Danger alert -->
+        <Border Background="#14EF4444" BorderBrush="#4DEF4444" BorderThickness="1" CornerRadius="8" Padding="16,12">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="!" FontWeight="Bold" Foreground="{StaticResource DangerBrush}" FontSize="16" Margin="0,0,12,0" VerticalAlignment="Top"/>
+                <TextBlock TextWrapping="Wrap" Foreground="{StaticResource Text1Brush}" FontSize="13">
+                    <Run FontWeight="Bold" Foreground="{StaticResource Text0Brush}">Do NOT initialize the repo! </Run>
+                    <Run>If GitLab creates an auto-README, the remote won't be empty and push will fail with &quot;rejected (fetch first)&quot;. Always create a completely blank project.</Run>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

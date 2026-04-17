@@ -1,0 +1,3013 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מדריך העברה: ClearCase → GitLab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-0:#0a0e1a;
+  --bg-1:#0f1420;
+  --bg-2:#161b2c;
+  --bg-3:#1d2338;
+  --surface:#1a2035;
+  --surface-hi:#242b45;
+  --border:#2a3454;
+  --border-hi:#3d4b73;
+
+  --text-0:#f0f3ff;
+  --text-1:#c8cfe5;
+  --text-2:#8892b3;
+  --text-3:#5a6489;
+
+  --accent:#ff6b35;
+  --accent-hi:#ff8555;
+  --accent-soft:rgba(255,107,53,.12);
+
+  --gitlab:#fc6d26;
+  --gitlab-2:#e24329;
+  --gitlab-3:#fca326;
+
+  --git:#f05032;
+  --vs:#5c2d91;
+  --vs-hi:#8661c5;
+  --cc:#1f70c1;
+
+  --ok:#3ecf8e;
+  --warn:#fbbf24;
+  --danger:#ef4444;
+
+  --font-body:'Heebo',-apple-system,sans-serif;
+  --font-display:'Bebas Neue',impact,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,monospace;
+
+  --shadow-sm:0 2px 8px rgba(0,0,0,.35);
+  --shadow-md:0 8px 24px rgba(0,0,0,.45);
+  --shadow-lg:0 24px 60px rgba(0,0,0,.55);
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:80px}
+
+body{
+  font-family:var(--font-body);
+  background:var(--bg-0);
+  color:var(--text-1);
+  line-height:1.75;
+  font-weight:400;
+  font-size:16px;
+  overflow-x:hidden;
+  min-height:100vh;
+}
+
+/* Background atmosphere */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(255,107,53,.08), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(252,109,38,.06), transparent 60%),
+    radial-gradient(ellipse 40% 30% at 50% 50%, rgba(92,45,145,.04), transparent 60%);
+  pointer-events:none;z-index:0;
+}
+body::after{
+  content:'';
+  position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.015) 1px, transparent 1px);
+  background-size:48px 48px;
+  pointer-events:none;z-index:0;
+  mask-image:radial-gradient(ellipse at center, black 30%, transparent 80%);
+}
+
+.page{position:relative;z-index:1}
+
+/* ====== NAV ====== */
+.nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(10,14,26,.85);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+}
+.nav-inner{
+  max-width:1280px;margin:0 auto;
+  padding:14px 32px;
+  display:flex;align-items:center;justify-content:space-between;gap:24px;
+}
+.nav-brand{
+  display:flex;align-items:center;gap:14px;
+  font-family:var(--font-display);
+  font-size:22px;letter-spacing:2px;
+  color:var(--text-0);
+  flex-shrink:0;
+}
+.nav-brand-mark{
+  width:42px;height:42px;border-radius:11px;
+  background:linear-gradient(135deg,var(--gitlab-2),var(--gitlab),var(--gitlab-3));
+  display:grid;place-items:center;
+  box-shadow:0 4px 16px rgba(252,109,38,.35);
+  font-family:var(--font-mono);font-weight:700;color:#fff;font-size:13px;
+  letter-spacing:0;
+  flex-shrink:0;
+  white-space:nowrap;
+}
+.nav-links{display:flex;gap:6px;flex-wrap:wrap}
+.nav-links a{
+  color:var(--text-2);text-decoration:none;
+  padding:8px 14px;border-radius:8px;
+  font-size:14px;font-weight:500;
+  transition:all .2s;
+}
+.nav-links a:hover{color:var(--text-0);background:var(--surface)}
+
+/* ====== HERO ====== */
+.hero{
+  max-width:1280px;margin:0 auto;
+  padding:80px 32px 60px;
+  position:relative;
+}
+.hero-tag{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:8px 16px;
+  background:var(--accent-soft);
+  border:1px solid rgba(255,107,53,.3);
+  border-radius:100px;
+  color:var(--accent-hi);
+  font-size:13px;font-weight:600;letter-spacing:.5px;
+  margin-bottom:28px;
+}
+.hero-tag::before{
+  content:'';width:8px;height:8px;border-radius:50%;
+  background:var(--accent);
+  box-shadow:0 0 12px var(--accent);
+  animation:pulse 2s infinite;
+}
+@keyframes pulse{
+  0%,100%{opacity:1;transform:scale(1)}
+  50%{opacity:.5;transform:scale(1.2)}
+}
+
+.hero h1{
+  font-family:var(--font-display);
+  font-size:clamp(48px,8vw,110px);
+  line-height:.92;letter-spacing:1px;
+  color:var(--text-0);
+  margin-bottom:24px;
+  direction:ltr;
+  text-align:left;
+}
+.hero h1 .arrow{
+  display:inline-block;
+  color:var(--accent);
+  margin:0 18px;
+  font-family:var(--font-mono);
+  font-weight:400;
+}
+.hero h1 .grad{
+  background:linear-gradient(135deg,var(--gitlab-2),var(--gitlab),var(--gitlab-3));
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;color:transparent;
+}
+.hero-sub{
+  font-size:19px;color:var(--text-2);
+  max-width:720px;line-height:1.7;
+  margin-bottom:40px;
+}
+
+.hero-stats{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:16px;margin-top:40px;
+}
+.stat{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:20px 22px;
+  position:relative;overflow:hidden;
+}
+.stat::before{
+  content:'';position:absolute;top:0;right:0;width:60px;height:60px;
+  background:radial-gradient(circle,var(--accent-soft),transparent 70%);
+}
+.stat-num{
+  font-family:var(--font-display);
+  font-size:44px;line-height:1;
+  color:var(--accent-hi);
+  margin-bottom:6px;
+}
+.stat-label{
+  font-size:13px;color:var(--text-2);
+  text-transform:uppercase;letter-spacing:1px;font-weight:600;
+}
+
+/* ====== SECTION ====== */
+.section{
+  max-width:1280px;margin:0 auto;
+  padding:70px 32px;
+}
+.section-head{
+  display:flex;align-items:flex-end;gap:24px;
+  margin-bottom:48px;
+  border-bottom:1px solid var(--border);
+  padding-bottom:24px;
+}
+.section-num{
+  font-family:var(--font-display);
+  font-size:88px;line-height:.85;
+  color:var(--accent);
+  opacity:.95;
+  flex-shrink:0;
+}
+.section-title{
+  font-family:var(--font-display);
+  font-size:48px;line-height:1;letter-spacing:1px;
+  color:var(--text-0);
+  margin-bottom:8px;
+}
+.section-desc{color:var(--text-2);font-size:16px;max-width:640px}
+
+/* ====== CARD ====== */
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:28px 30px;
+  margin-bottom:24px;
+  position:relative;
+  transition:border-color .2s;
+}
+.card:hover{border-color:var(--border-hi)}
+.card h3{
+  font-size:22px;font-weight:700;
+  color:var(--text-0);
+  margin-bottom:14px;
+  display:flex;align-items:center;gap:12px;
+}
+.card h3::before{
+  content:'';width:4px;height:22px;border-radius:2px;
+  background:var(--accent);
+}
+.card h4{
+  font-size:17px;font-weight:600;
+  color:var(--text-0);
+  margin:20px 0 12px;
+}
+.card p{color:var(--text-1);margin-bottom:12px}
+.card ul,.card ol{margin:12px 0 12px 0;padding-right:22px}
+.card ul li,.card ol li{margin-bottom:8px;color:var(--text-1)}
+.card ul li::marker{color:var(--accent)}
+.card strong{color:var(--text-0);font-weight:600}
+
+/* ====== CODE BLOCK ====== */
+.code{
+  background:var(--bg-1);
+  border:1px solid var(--border);
+  border-radius:12px;
+  margin:16px 0;
+  overflow:hidden;
+  direction:ltr;
+  position:relative;
+}
+.code-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 16px;
+  background:var(--bg-2);
+  border-bottom:1px solid var(--border);
+  font-family:var(--font-mono);font-size:12px;
+  color:var(--text-2);
+}
+.code-dots{display:flex;gap:6px}
+.code-dots span{width:10px;height:10px;border-radius:50%}
+.code-dots span:nth-child(1){background:#ff5f56}
+.code-dots span:nth-child(2){background:#ffbd2e}
+.code-dots span:nth-child(3){background:#27c93f}
+.code-lang{
+  font-weight:600;color:var(--text-2);
+  padding:2px 10px;background:var(--surface-hi);
+  border-radius:6px;font-size:11px;letter-spacing:.5px;
+}
+.code-copy{
+  background:transparent;border:1px solid var(--border-hi);
+  color:var(--text-2);
+  padding:4px 10px;border-radius:6px;
+  font-family:var(--font-mono);font-size:11px;
+  cursor:pointer;transition:all .2s;
+  font-weight:600;
+}
+.code-copy:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.code-copy.copied{background:var(--ok);color:#fff;border-color:var(--ok)}
+.code pre{
+  padding:18px 20px;
+  overflow-x:auto;
+  font-family:var(--font-mono);
+  font-size:13.5px;line-height:1.7;
+  color:#e8ecfc;
+}
+.code pre code{background:none;padding:0}
+
+/* === CRITICAL: Inline code direction fix for mixed Hebrew/English ===
+   Every inline <code> tag (not inside <pre>) gets isolated LTR rendering,
+   so Unicode Bidi Algorithm doesn't reorder it inside Hebrew sentences.
+   This fixes ".sln", "core.autocrlf=true", filenames etc. appearing reversed. */
+:not(pre) > code{
+  unicode-bidi:isolate;
+  direction:ltr;
+  display:inline-block;
+  vertical-align:baseline;
+}
+
+/* syntax colors */
+.tok-c{color:#6a7895;font-style:italic}           /* comment */
+.tok-k{color:#c792ea;font-weight:600}             /* keyword */
+.tok-s{color:#c3e88d}                             /* string */
+.tok-n{color:#f78c6c}                             /* number */
+.tok-cmd{color:#82aaff;font-weight:600}           /* command */
+.tok-flag{color:#ffcb6b}                          /* flag */
+.tok-path{color:#89ddff}                          /* path */
+.tok-v{color:#ff6b35;font-weight:600}             /* variable */
+.tok-op{color:#89ddff}                            /* operator */
+
+/* ====== ALERT ====== */
+.alert{
+  border-radius:12px;padding:16px 20px;
+  margin:16px 0;
+  display:flex;gap:14px;align-items:flex-start;
+  border:1px solid;
+}
+.alert-icon{
+  width:28px;height:28px;border-radius:8px;
+  display:grid;place-items:center;
+  font-weight:700;flex-shrink:0;
+  font-family:var(--font-mono);
+}
+.alert-body{flex:1}
+.alert-title{font-weight:700;color:var(--text-0);margin-bottom:4px}
+.alert-body p{margin:0;color:var(--text-1);font-size:14.5px;line-height:1.65}
+.alert-body code{
+  background:rgba(0,0,0,.3);
+  padding:2px 6px;border-radius:4px;
+  font-family:var(--font-mono);font-size:12.5px;
+  color:var(--accent-hi);
+}
+
+.alert.info{background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.3)}
+.alert.info .alert-icon{background:#3b82f6;color:#fff}
+.alert.warn{background:rgba(251,191,36,.08);border-color:rgba(251,191,36,.3)}
+.alert.warn .alert-icon{background:var(--warn);color:#1a1a1a}
+.alert.ok{background:rgba(62,207,142,.08);border-color:rgba(62,207,142,.3)}
+.alert.ok .alert-icon{background:var(--ok);color:#fff}
+.alert.danger{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.3)}
+.alert.danger .alert-icon{background:var(--danger);color:#fff}
+
+/* ====== FLOW DIAGRAM ====== */
+.flow{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:16px;margin:28px 0;
+  position:relative;
+}
+.flow-step{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:22px;
+  position:relative;
+  transition:all .25s;
+}
+.flow-step:hover{
+  transform:translateY(-4px);
+  border-color:var(--accent);
+  box-shadow:0 16px 40px rgba(255,107,53,.15);
+}
+.flow-step-num{
+  position:absolute;top:-12px;right:20px;
+  width:28px;height:28px;border-radius:50%;
+  background:var(--accent);color:#fff;
+  font-family:var(--font-mono);font-weight:700;
+  display:grid;place-items:center;
+  font-size:13px;
+  box-shadow:0 4px 12px rgba(255,107,53,.4);
+}
+.flow-step-icon{
+  font-family:var(--font-display);font-size:32px;
+  color:var(--accent-hi);
+  margin-bottom:10px;line-height:1;
+}
+.flow-step-title{
+  font-weight:700;color:var(--text-0);
+  margin-bottom:6px;font-size:16px;
+}
+.flow-step-desc{font-size:13.5px;color:var(--text-2);line-height:1.55}
+
+/* ====== VS VERSION BADGES ====== */
+.vs-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:14px;margin:20px 0;
+}
+.vs-card{
+  background:linear-gradient(135deg,rgba(92,45,145,.15),rgba(134,97,197,.08));
+  border:1px solid rgba(134,97,197,.3);
+  border-radius:12px;
+  padding:18px;
+  position:relative;
+}
+.vs-card-version{
+  font-family:var(--font-display);
+  font-size:38px;letter-spacing:1px;
+  color:var(--vs-hi);line-height:1;
+  margin-bottom:8px;
+}
+.vs-card-name{font-size:14px;color:var(--text-1);font-weight:600;margin-bottom:8px}
+.vs-card-format{
+  font-family:var(--font-mono);font-size:12px;
+  color:var(--text-2);
+  padding:3px 8px;background:rgba(0,0,0,.3);border-radius:4px;
+  display:inline-block;
+}
+
+/* ====== FILE TREE (proper visual, not ASCII) ====== */
+.tree-box{
+  background:var(--bg-1);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:20px 22px;
+  margin:18px 0;
+  font-family:var(--font-mono);
+  font-size:13.5px;
+  direction:ltr;
+  text-align:left;
+}
+.tree-box ul{
+  list-style:none;
+  padding:0;
+  margin:0;
+}
+.tree-box ul ul{
+  padding-left:24px;
+  margin-left:6px;
+  border-left:1px dashed var(--border-hi);
+}
+.tree-box li{
+  position:relative;
+  padding:4px 0 4px 22px;
+  line-height:1.55;
+  color:var(--text-1);
+}
+.tree-box li::before{
+  content:'';
+  position:absolute;
+  left:0;top:14px;
+  width:14px;height:1px;
+  background:var(--border-hi);
+}
+.tree-box > ul > li::before{display:none}
+.tree-box > ul > li{padding-left:0}
+
+.tree-folder{
+  color:var(--accent-hi);
+  font-weight:700;
+}
+.tree-folder::after{
+  content:' /';
+  color:var(--text-3);
+  font-weight:400;
+}
+.tree-file{color:var(--text-1)}
+.tree-comment{
+  color:var(--text-3);
+  font-style:italic;
+  margin-left:14px;
+  font-size:12.5px;
+}
+.tree-icon{
+  display:inline-block;
+  width:18px;
+  text-align:center;
+  margin-right:6px;
+  opacity:.85;
+}
+
+/* ====== TABLE ====== */
+.table-wrap{
+  overflow-x:auto;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  margin:18px 0;
+}
+table{
+  width:100%;border-collapse:collapse;
+  font-size:14.5px;
+}
+thead{background:var(--bg-2)}
+th,td{
+  padding:12px 18px;text-align:right;
+  border-bottom:1px solid var(--border);
+}
+th{
+  color:var(--text-0);font-weight:700;
+  font-size:13px;letter-spacing:.5px;
+  text-transform:uppercase;
+}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(255,255,255,.02)}
+td code{
+  background:var(--bg-1);padding:2px 8px;
+  border-radius:4px;font-family:var(--font-mono);
+  font-size:12.5px;color:var(--accent-hi);
+  direction:ltr;display:inline-block;
+}
+
+/* ====== CHECKLIST ====== */
+.checklist{list-style:none;padding:0;margin:18px 0}
+.checklist li{
+  display:flex;gap:14px;align-items:flex-start;
+  padding:14px 16px;
+  background:var(--bg-2);
+  border:1px solid var(--border);
+  border-radius:10px;
+  margin-bottom:10px;
+  transition:all .2s;
+  cursor:pointer;
+}
+.checklist li:hover{border-color:var(--accent)}
+.checklist li.done{opacity:.55;border-color:var(--ok)}
+.checklist li.done .check-box{background:var(--ok);border-color:var(--ok)}
+.checklist li.done .check-box::after{content:'✓';color:#fff;font-weight:700}
+.check-box{
+  width:22px;height:22px;border-radius:6px;
+  border:2px solid var(--border-hi);
+  display:grid;place-items:center;
+  flex-shrink:0;transition:all .2s;
+  font-size:14px;margin-top:2px;
+}
+.check-text{flex:1;font-size:14.5px;color:var(--text-1)}
+.checklist li.done .check-text{text-decoration:line-through}
+
+/* ====== FOOTER ====== */
+.footer{
+  max-width:1280px;margin:0 auto;
+  padding:48px 32px;
+  border-top:1px solid var(--border);
+  text-align:center;
+  color:var(--text-3);
+  font-size:14px;
+}
+.footer strong{color:var(--accent-hi)}
+
+/* ====== UTILITIES ====== */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:900px){
+  .grid-2{grid-template-columns:1fr}
+  .section-head{flex-direction:column;align-items:flex-start;gap:8px}
+  .section-num{font-size:64px}
+  .section-title{font-size:34px}
+  .nav-inner{padding:14px 20px}
+  .hero{padding:50px 20px 40px}
+  .section{padding:50px 20px}
+}
+
+/* Print */
+@media print{
+  body::before,body::after,.nav{display:none}
+  .code-copy{display:none}
+}
+
+/* Smooth anchor offset */
+section[id]{scroll-margin-top:80px}
+
+/* ====== BRANCH DIAGRAM ====== */
+.branch-diagram{
+  background:var(--bg-1);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:30px 24px;
+  margin:20px 0;
+  overflow-x:auto;
+  direction:ltr;
+}
+.branch-diagram svg{
+  display:block;
+  width:100%;
+  max-width:900px;
+  height:auto;
+  margin:0 auto;
+}
+
+/* ====== WORKFLOW TIMELINE ====== */
+.timeline{
+  position:relative;
+  padding-right:32px;
+  margin:20px 0;
+}
+.timeline::before{
+  content:'';
+  position:absolute;
+  right:12px;top:8px;bottom:8px;
+  width:2px;
+  background:linear-gradient(180deg, var(--accent), var(--gitlab));
+  border-radius:1px;
+}
+.timeline-item{
+  position:relative;
+  margin-bottom:24px;
+  padding:16px 18px;
+  background:var(--bg-2);
+  border:1px solid var(--border);
+  border-radius:10px;
+}
+.timeline-item::before{
+  content:'';
+  position:absolute;
+  right:-26px;top:22px;
+  width:14px;height:14px;
+  border-radius:50%;
+  background:var(--accent);
+  border:3px solid var(--bg-0);
+  box-shadow:0 0 0 2px var(--accent);
+}
+.timeline-item h4{
+  margin:0 0 6px;
+  color:var(--text-0);
+  font-size:16px;
+  font-weight:700;
+}
+.timeline-item p{
+  margin:0;
+  color:var(--text-2);
+  font-size:14px;
+  line-height:1.65;
+}
+.timeline-item code{
+  background:var(--bg-0);
+  padding:2px 8px;
+  border-radius:4px;
+  font-family:var(--font-mono);
+  font-size:12.5px;
+  color:var(--accent-hi);
+  direction:ltr;
+  display:inline-block;
+}
+
+/* ====== COMMAND REFERENCE TABLE ====== */
+.cmd-ref{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:10px;
+  margin:18px 0;
+}
+.cmd-row{
+  display:grid;
+  grid-template-columns:280px 1fr;
+  gap:18px;
+  align-items:center;
+  padding:12px 16px;
+  background:var(--bg-2);
+  border:1px solid var(--border);
+  border-radius:8px;
+  transition:border-color .2s;
+}
+.cmd-row:hover{border-color:var(--accent)}
+.cmd-row .cmd{
+  font-family:var(--font-mono);
+  font-size:13px;
+  color:var(--accent-hi);
+  font-weight:600;
+  direction:ltr;
+  text-align:left;
+  background:var(--bg-0);
+  padding:6px 10px;
+  border-radius:6px;
+  border:1px solid var(--border);
+}
+.cmd-row .cmd-desc{
+  color:var(--text-1);
+  font-size:14px;
+  line-height:1.55;
+}
+@media(max-width:700px){
+  .cmd-row{grid-template-columns:1fr;gap:8px}
+}
+
+/* ====== IDE TABS ====== */
+.ide-tabs{
+  display:flex;
+  gap:4px;
+  margin:20px 0 0;
+  border-bottom:1px solid var(--border);
+  flex-wrap:wrap;
+}
+.ide-tab{
+  padding:10px 18px;
+  background:var(--bg-2);
+  border:1px solid var(--border);
+  border-bottom:none;
+  border-radius:10px 10px 0 0;
+  cursor:pointer;
+  font-weight:600;
+  font-size:14px;
+  color:var(--text-2);
+  transition:all .2s;
+}
+.ide-tab:hover{color:var(--text-0)}
+.ide-tab.active{
+  background:var(--surface);
+  color:var(--accent-hi);
+  border-color:var(--accent);
+  border-bottom-color:var(--surface);
+  position:relative;
+  z-index:2;
+  margin-bottom:-1px;
+}
+.ide-panel{
+  display:none;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-top-color:var(--accent);
+  border-radius:0 0 12px 12px;
+  padding:24px;
+  margin-bottom:18px;
+}
+.ide-panel.active{display:block}
+.ide-panel h4{margin-top:0}
+
+/* ====== RULE BOX ====== */
+.rule-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));
+  gap:14px;
+  margin:18px 0;
+}
+.rule-box{
+  background:var(--bg-2);
+  border:1px solid var(--border);
+  border-right:4px solid var(--accent);
+  border-radius:10px;
+  padding:16px 18px;
+}
+.rule-box h4{
+  margin:0 0 8px;
+  color:var(--text-0);
+  font-size:15px;
+  font-weight:700;
+}
+.rule-box p{
+  margin:0;
+  color:var(--text-2);
+  font-size:13.5px;
+  line-height:1.6;
+}
+.rule-box.do{border-right-color:var(--ok)}
+.rule-box.dont{border-right-color:var(--danger)}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- NAVIGATION -->
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-brand" dir="ltr">
+      <div class="nav-brand-mark">CC→GL</div>
+      <span>Migration Guide</span>
+    </div>
+    <div class="nav-links">
+      <a href="#intro">הקדמה</a>
+      <a href="#prereq">דרישות</a>
+      <a href="#prepare">הכנה</a>
+      <a href="#gitignore">gitignore</a>
+      <a href="#gitignore-web">Web/Angular</a>
+      <a href="#gitlab">GitLab</a>
+      <a href="#migrate">העברה</a>
+      <a href="#verify">בדיקה</a>
+      <a href="#workflow">עבודה שוטפת</a>
+      <a href="#checklist">צ'קליסט</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hero-tag">מדריך מקצועי · גרסה 2026</div>
+  <h1>
+    <span style="color:var(--cc)">ClearCase</span>
+    <span class="arrow">→</span>
+    <span class="grad">GitLab</span>
+  </h1>
+  <p class="hero-sub">
+    מדריך מפורט שלב אחרי שלב להעברת פרויקטים מסביבת IBM Rational ClearCase אל GitLab, עבור פתרונות Visual Studio 2010 / 2015 / 2019 / 2022.
+    המדריך מבוסס על העברה של "הגרסה האחרונה" (Snapshot / Latest Sources) מסיפרייה מקומית — הגישה הפשוטה, המהירה והיציבה ביותר.
+  </p>
+
+  <div class="hero-stats">
+    <div class="stat">
+      <div class="stat-num">4</div>
+      <div class="stat-label">גרסאות Visual Studio</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">9</div>
+      <div class="stat-label">שלבים עיקריים</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">3</div>
+      <div class="stat-label">קבצי gitignore מוכנים</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">100%</div>
+      <div class="stat-label">ללא היסטוריה (Latest)</div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ 01: INTRO ============ -->
+<section class="section" id="intro">
+  <div class="section-head">
+    <div class="section-num">01</div>
+    <div>
+      <h2 class="section-title">הקדמה ותכנון האסטרטגיה</h2>
+      <p class="section-desc">לפני שנוגעים בקוד — מבינים מה אנחנו עושים, ולמה.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>שתי אסטרטגיות עיקריות להעברה</h3>
+    <p>
+      קיימות שתי גישות עיקריות להעברה מ-ClearCase ל-Git/GitLab. המדריך הזה מתמקד באסטרטגיה השנייה — <strong>העברת Snapshot (הגרסה האחרונה בלבד)</strong> — שהיא הבחירה שלך לפי התיאור.
+    </p>
+
+    <div class="grid-2" style="margin-top:18px">
+      <div style="background:var(--bg-2);padding:18px;border-radius:10px;border:1px solid var(--border)">
+        <h4 style="margin-top:0">גישה א' — העברת היסטוריה מלאה</h4>
+        <p style="font-size:14px;color:var(--text-2)">
+          שימוש בכלים כמו <code>git-cc</code>, <code>ClearCase Exporter</code>, או סקריפטים מותאמים להמרת היסטוריית ה-versions. מורכבת, איטית, ונוטה לשגיאות עם סוגי קבצים בינאריים וענפים מורכבים.
+        </p>
+      </div>
+      <div style="background:linear-gradient(135deg,var(--accent-soft),transparent);padding:18px;border-radius:10px;border:1px solid var(--accent)">
+        <h4 style="margin-top:0;color:var(--accent-hi)">גישה ב' — Snapshot (המסלול שלנו) ✓</h4>
+        <p style="font-size:14px;color:var(--text-1)">
+          לוקחים את הגרסה האחרונה מהסיפרייה המקומית, מבצעים ניקוי יסודי, יוצרים <code>.gitignore</code> מדויק, ודוחפים ל-GitLab כ-commit ראשון. פשוט, מהיר, ונקי.
+        </p>
+      </div>
+    </div>
+
+    <div class="alert info" style="margin-top:20px">
+      <div class="alert-icon">i</div>
+      <div class="alert-body">
+        <div class="alert-title">למה Snapshot מספיק ברוב המקרים?</div>
+        <p>היסטוריית ClearCase מישארת ב-ClearCase עצמו (לקריאה בלבד, לצרכי ארכיון). ב-GitLab מתחילים "דף חדש" ונקי. אם צריך פעם לבדוק מה היה בעבר — הארכיון הישן זמין.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>תהליך ההעברה במבט-על</h3>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-step-num">1</div>
+        <div class="flow-step-icon">✓</div>
+        <div class="flow-step-title">הכנה</div>
+        <div class="flow-step-desc">התקנת Git, יצירת חשבון GitLab, וריכוז הפרויקטים.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step-num">2</div>
+        <div class="flow-step-icon">⌘</div>
+        <div class="flow-step-title">ניקוי</div>
+        <div class="flow-step-desc">הסרת Build artifacts וקבצי ClearCase מיותרים.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step-num">3</div>
+        <div class="flow-step-icon">∅</div>
+        <div class="flow-step-title">gitignore</div>
+        <div class="flow-step-desc">התאמת .gitignore לגרסת ה-VS של כל פרויקט.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step-num">4</div>
+        <div class="flow-step-icon">⎋</div>
+        <div class="flow-step-title">GitLab</div>
+        <div class="flow-step-desc">יצירת Project ריק ב-GitLab עם ה-URL הנכון.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step-num">5</div>
+        <div class="flow-step-icon">→</div>
+        <div class="flow-step-title">Push</div>
+        <div class="flow-step-desc">git init, commit ראשון, ו-push ל-remote.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step-num">6</div>
+        <div class="flow-step-icon">✓</div>
+        <div class="flow-step-title">בדיקה</div>
+        <div class="flow-step-desc">Clone טרי, Build ו-Run לוידוא שלמות.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 02: PREREQUISITES ============ -->
+<section class="section" id="prereq">
+  <div class="section-head">
+    <div class="section-num">02</div>
+    <div>
+      <h2 class="section-title">דרישות מקדימות</h2>
+      <p class="section-desc">הכלים והזיהויים שצריך להכין לפני שמתחילים.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>כלים חיוניים</h3>
+    <ol>
+      <li><strong>Git for Windows</strong> — הגרסה העדכנית מ-<code>git-scm.com</code>. כוללת Git Bash, שהוא הטרמינל שבו נשתמש לכל הפקודות במדריך.</li>
+      <li><strong>Git Credential Manager</strong> — מגיע בדרך כלל עם Git for Windows. מנהל את ה-credentials מול GitLab.</li>
+      <li><strong>חשבון GitLab</strong> — עם הרשאה ליצירת Projects בקבוצה הרלוונטית (Group/Subgroup).</li>
+      <li><strong>עורך טקסט טוב</strong> — VS Code, Notepad++ או דומה, לצפייה ועריכה של קבצי <code>.gitignore</code> וקבצי קונפיגורציה.</li>
+      <li><strong>Visual Studio</strong> — הגרסה/גרסאות של הפרויקטים (2010, 2015, 2019, 2022), לוידוא build אחרי ההעברה.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h3>הגדרות Git גלובליות — פעם אחת, לכל החיים</h3>
+    <p>הפקודות הבאות מגדירות זהות גלובלית, line endings מתאימים ל-Windows, ודיפולטים שחוסכים הרבה כאב ראש:</p>
+
+    <div class="code">
+      <div class="code-head">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-lang">BASH · Git config</div>
+        <button class="code-copy">Copy</button>
+      </div>
+<pre><code><span class="tok-c"># זהות המשתמש — חשוב שתתאם לזו של GitLab</span>
+<span class="tok-cmd">git</span> config --global user.name <span class="tok-s">"Amit Cohen"</span>
+<span class="tok-cmd">git</span> config --global user.email <span class="tok-s">"amit.cohen@company.co.il"</span>
+
+<span class="tok-c"># טיפול נכון ב-line endings בסביבת Windows</span>
+<span class="tok-cmd">git</span> config --global core.autocrlf <span class="tok-s">true</span>
+
+<span class="tok-c"># שם ברירת מחדל לענף הראשי</span>
+<span class="tok-cmd">git</span> config --global init.defaultBranch <span class="tok-s">main</span>
+
+<span class="tok-c"># מונע קבצים גדולים בטעות (אזהרה מעל 50MB, שגיאה מעל 100MB)</span>
+<span class="tok-cmd">git</span> config --global core.bigFileThreshold <span class="tok-s">50m</span>
+
+<span class="tok-c"># rebase as default for pull (אופציונלי — תלוי זרימת העבודה)</span>
+<span class="tok-cmd">git</span> config --global pull.rebase <span class="tok-s">false</span>
+
+<span class="tok-c"># תמיכה בשמות קבצים ארוכים (חשוב! בעיקר לפרויקטי .NET)</span>
+<span class="tok-cmd">git</span> config --global core.longpaths <span class="tok-s">true</span>
+
+<span class="tok-c"># בדיקה</span>
+<span class="tok-cmd">git</span> config --global --list</code></pre>
+    </div>
+
+    <div class="alert warn">
+      <div class="alert-icon">!</div>
+      <div class="alert-body">
+        <div class="alert-title">שים לב ל-<code>core.autocrlf=true</code></div>
+        <p>זו ההגדרה הנכונה ל-Windows: Git יחזיק את הקבצים ב-repo עם LF, אבל יחליף ל-CRLF ב-checkout. בלעדיה, Visual Studio עשוי לסמן לך את כל הקבצים כ"שונו" אחרי clone.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>ארגון סיפריית המקור</h3>
+    <p>לפני שמתחילים בהעברה, כדאי שיהיה לך מבנה נקי של התיקיות. דוגמה:</p>
+    <div class="tree-box">
+      <ul>
+        <li>
+          <span class="tree-icon">📁</span><span class="tree-folder">C:\Migration</span>
+          <ul>
+            <li>
+              <span class="tree-icon">📁</span><span class="tree-folder">_sources</span>
+              <span class="tree-comment"># הסיפרייה עם הגרסה האחרונה מ-ClearCase</span>
+              <ul>
+                <li><span class="tree-icon">📁</span><span class="tree-folder">ProjectAlpha-VS2010</span></li>
+                <li><span class="tree-icon">📁</span><span class="tree-folder">ProjectBeta-VS2015</span></li>
+                <li><span class="tree-icon">📁</span><span class="tree-folder">ProjectGamma-VS2019</span></li>
+                <li><span class="tree-icon">📁</span><span class="tree-folder">ProjectDelta-VS2022</span></li>
+              </ul>
+            </li>
+            <li>
+              <span class="tree-icon">📁</span><span class="tree-folder">_staging</span>
+              <span class="tree-comment"># סיפריית עבודה — לפה נעתיק לפני push</span>
+              <ul>
+                <li>
+                  <span class="tree-icon">📁</span><span class="tree-folder">ProjectAlpha</span>
+                  <span class="tree-comment"># נקייה מ-build artifacts</span>
+                </li>
+              </ul>
+            </li>
+            <li>
+              <span class="tree-icon">📁</span><span class="tree-folder">_gitignore-templates</span>
+              <span class="tree-comment"># תבניות .gitignore</span>
+              <ul>
+                <li><span class="tree-icon">📄</span><span class="tree-file">gitignore-vs2010.txt</span></li>
+                <li><span class="tree-icon">📄</span><span class="tree-file">gitignore-vs2015-2019.txt</span></li>
+                <li><span class="tree-icon">📄</span><span class="tree-file">gitignore-vs2022.txt</span></li>
+                <li><span class="tree-icon">📄</span><span class="tree-file">gitignore-vscode-angular.txt</span></li>
+              </ul>
+            </li>
+            <li>
+              <span class="tree-icon">📁</span><span class="tree-folder">_logs</span>
+              <span class="tree-comment"># לוגים של תהליך ההעברה</span>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+    <div class="alert ok">
+      <div class="alert-icon">✓</div>
+      <div class="alert-body">
+        <div class="alert-title">כלל זהב</div>
+        <p>לעולם <strong>אל תעבוד ישירות על <code>_sources</code></strong>. העתק את הפרויקט ל-<code>_staging</code>, ושם בצע את הניקוי וה-commit. אם משהו משתבש — <code>_sources</code> מישאר נקי.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 03: PREPARE ============ -->
+<section class="section" id="prepare">
+  <div class="section-head">
+    <div class="section-num">03</div>
+    <div>
+      <h2 class="section-title">הכנה וניקוי הפרויקט</h2>
+      <p class="section-desc">לפני שמעבירים — מסירים את כל מה שלא שייך ל-repo.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>שלב 1: העתקה לתיקיית Staging</h3>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-lang">BASH · Git Bash</div>
+        <button class="code-copy">Copy</button>
+      </div>
+<pre><code><span class="tok-c"># פתח Git Bash ונווט לסיפריית העבודה</span>
+<span class="tok-cmd">cd</span> <span class="tok-path">/c/Migration</span>
+
+<span class="tok-c"># יצירת תיקיית staging אם לא קיימת</span>
+<span class="tok-cmd">mkdir</span> -p <span class="tok-path">_staging</span>
+
+<span class="tok-c"># העתקה של הפרויקט (דוגמה ל-VS2019)</span>
+<span class="tok-cmd">cp</span> -r <span class="tok-path">_sources/ProjectGamma-VS2019</span> <span class="tok-path">_staging/ProjectGamma</span>
+
+<span class="tok-c"># מעבר לתיקיית הפרויקט המועתקת</span>
+<span class="tok-cmd">cd</span> <span class="tok-path">_staging/ProjectGamma</span></code></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>שלב 2: הסרת קבצי ClearCase</h3>
+    <p>ClearCase מוסיף קבצים ותיקיות משלו שלא צריכים להגיע ל-Git. הפקודות הבאות מסירים אותם מהעותק ב-staging:</p>
+
+    <div class="code">
+      <div class="code-head">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-lang">BASH · Clean ClearCase artifacts</div>
+        <button class="code-copy">Copy</button>
+      </div>
+<pre><code><span class="tok-c"># יש לוודא שאתה בתוך תיקיית הפרויקט ב-_staging!</span>
+<span class="tok-cmd">pwd</span>   <span class="tok-c"># יציג: /c/Migration/_staging/ProjectGamma</span>
+
+<span class="tok-c"># מחיקת תיקיות פנימיות של ClearCase</span>
+<span class="tok-cmd">find</span> . -type d -name <span class="tok-s">"lost+found"</span> -exec <span class="tok-cmd">rm</span> -rf {} +
+<span class="tok-cmd">find</span> . -type d -name <span class="tok-s">".cc_data"</span> -exec <span class="tok-cmd">rm</span> -rf {} +
+
+<span class="tok-c"># מחיקת קבצי checkout/view של ClearCase</span>
+<span class="tok-cmd">find</span> . -name <span class="tok-s">"*.keep"</span> -delete
+<span class="tok-cmd">find</span> . -name <span class="tok-s">"*.keep.*"</span> -delete
+<span class="tok-cmd">find</span> . -name <span class="tok-s">"*.contrib"</span> -delete
+<span class="tok-cmd">find</span> . -name <span class="tok-s">"*.contrib.*"</span> -delete
+<span class="tok-cmd">find</span> . -name <span class="tok-s">"view.dat"</span> -delete
+
+<span class="tok-c"># מחיקת תיקיית .copyarea.db (אם קיימת)</span>
+<span class="tok-cmd">find</span> . -name <span class="tok-s">".copyarea.*"</span> -delete</code></pre>
+    </div>
+
+    <div class="alert info">
+      <div class="alert-icon">i</div>
+      <div class="alert-body">
+        <div class="alert-title">הקבצים האופייניים של ClearCase</div>
+        <p><code>.keep</code> נוצרים כשעושים hijack, <code>.contrib</code> נוצרים כשיש merge conflict, ו-<code>lost+found</code> היא תיקיית מטא-דאטה פנימית. אף אחד מהם לא רלוונטי ל-Git.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>שלב 3: ניקוי Build Artifacts</h3>
+    <p>אלה המחשולים הגדולים — תיקיות <code>bin</code>, <code>obj</code>, <code>packages</code>, <code>.vs</code> — שיכולות להכפיל את גודל הפרויקט פי 10. חשוב למחוק אותן <strong>לפני</strong> ה-commit הראשון.</p>
+
+    <div class="code">
+      <div class="code-head">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-lang">BASH · Clean build artifacts</div>
+        <button class="code-copy">Copy</button>
+      </div>
+<pre><code><span class="tok-c"># תיקיות build של Visual Studio (כל הגרסאות)</span>
+<span class="tok-cmd">find</span> . -type d -name <span class="tok-s">"bin"</span> -exec <span class="tok-cmd">rm</span> -rf {} +
+<span class="tok-cmd">find</span> . -type d -name <span class="tok-s">"obj"</span> -exec <span class="tok-cmd">rm</span> -rf {} +
+<span class="tok-cmd">find</span> . -type d -name <span class="tok-s">"Debug"</span> -exec <span class="tok-cmd">rm</span> -rf {} +
+<span class="tok-cmd">find</span> . -type d -name <span class="tok-s">"Release"</span> -exec <span class="tok-cmd">rm</span> -rf {} +
+<span class="tok-cmd">find</span> . -type d -name <span class="tok-s">"x64"</span> -exec <span class="tok-cmd">rm</span> -rf {} +
+<span class="tok-cmd">find</span> . -type d -name <span class="tok-s">"x86"</span> -exec <span class="tok-cmd">rm</span> -rf {} +
+
+<span class="tok-c"># תיקיית .vs (VS 2015+) — מכילה IntelliSense cache, אין צורך ב-Git</span>
+<span class="tok-cmd">find</span> . -type d -name <span class="tok-s">".vs"</span> -exec <span class="tok-cmd">rm</span> -rf {} +
+
+<span class="tok-c"># NuGet packages — יורדים מחדש מה-feed, אין צורך ב-Git</span>
+<span class="tok-cmd">find</span> . -type d -name <span class="tok-s">"packages"</span> -exec <span class="tok-cmd">rm</span> -rf {} +
+
+<span class="tok-c"># node_modules (אם יש חלק front-end)</span>
+<span class="tok-cmd">find</span> . -type d -name <span class="tok-s">"node_modules"</span> -exec <span class="tok-cmd">rm</span> -rf {} +
+
+<span class="tok-c"># קבצי משתמש של Visual Studio</span>
+<span class="tok-cmd">find</span> . -name <span class="tok-s">"*.suo"</span> -delete
+<span class="tok-cmd">find</span> . -name <span class="tok-s">"*.user"</span> -delete
+<span class="tok-cmd">find</span> . -name <span class="tok-s">"*.userosscache"</span> -delete
+<span class="tok-cmd">find</span> . -name <span class="tok-s">"*.sln.docstates"</span> -delete
+
+<span class="tok-c"># קבצי ReSharper (אם בשימוש)</span>
+<span class="tok-cmd">find</span> . -name <span class="tok-s">"*.DotSettings.user"</span> -delete
+<span class="tok-cmd">find</span> . -type d -name <span class="tok-s">"_ReSharper*"</span> -exec <span class="tok-cmd">rm</span> -rf {} +
+
+<span class="tok-c"># לוידוא — בדיקת הגודל הסופי</span>
+<span class="tok-cmd">du</span> -sh .</code></pre>
+    </div>
+
+    <div class="alert warn">
+      <div class="alert-icon">!</div>
+      <div class="alert-body">
+        <div class="alert-title">זהירות עם תיקיות בשם <code>Debug</code>/<code>Release</code></div>
+        <p>אם הפרויקט מכיל תיקיות מקור עם שמות כאלה (נדיר, אבל קורה) — אל תריץ את הפקודות באופן עיוור. בדוק עם <code>find . -type d -name "Debug"</code> תחילה, וראה מה נמחק.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>שלב 4: זיהוי קבצים שכדאי לשקול</h3>
+    <p>סרוק לאיתור קבצים גדולים או מסוג שלא רצוי לכלול ב-repo:</p>
+
+    <div class="code">
+      <div class="code-head">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-lang">BASH · Audit</div>
+        <button class="code-copy">Copy</button>
+      </div>
+<pre><code><span class="tok-c"># קבצים גדולים מ-10MB</span>
+<span class="tok-cmd">find</span> . -type f -size +10M -exec <span class="tok-cmd">ls</span> -lh {} <span class="tok-op">\;</span> <span class="tok-op">|</span> <span class="tok-cmd">awk</span> <span class="tok-s">'{print $5, $9}'</span>
+
+<span class="tok-c"># קבצי DLL/EXE (ייתכן שאלה חבילות צד שלישי שצריכות להישאר, או artifacts למחיקה)</span>
+<span class="tok-cmd">find</span> . -name <span class="tok-s">"*.dll"</span> -o -name <span class="tok-s">"*.exe"</span> -o -name <span class="tok-s">"*.pdb"</span>
+
+<span class="tok-c"># סה"כ קבצים — שגודל ה-repo לא יהיה מפלצתי</span>
+<span class="tok-cmd">find</span> . -type f <span class="tok-op">|</span> <span class="tok-cmd">wc</span> -l
+
+<span class="tok-c"># גודל כולל</span>
+<span class="tok-cmd">du</span> -sh .</code></pre>
+    </div>
+
+    <div class="alert danger">
+      <div class="alert-icon">!</div>
+      <div class="alert-body">
+        <div class="alert-title">כלל אצבע לגבי גודל</div>
+        <p>Repo בריא ב-GitLab הוא מתחת ל-<strong>1GB</strong>. אם אתה רואה יותר — משהו לא נקי. קבצים בודדים מעל <strong>100MB</strong> דורשים Git LFS (Large File Storage) או הוצאה מה-repo.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 04: GITIGNORE ============ -->
+<section class="section" id="gitignore">
+  <div class="section-head">
+    <div class="section-num">04</div>
+    <div>
+      <h2 class="section-title">קבצי gitignore לכל גרסת VS</h2>
+      <p class="section-desc">שלושה קבצים מוכנים — בחר את המתאים לגרסה של הפרויקט.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>לאיזה פרויקט איזה קובץ?</h3>
+    <div class="vs-grid">
+      <div class="vs-card">
+        <div class="vs-card-version">2010</div>
+        <div class="vs-card-name">Visual Studio 2010</div>
+        <div class="vs-card-format">gitignore-vs2010.txt</div>
+      </div>
+      <div class="vs-card">
+        <div class="vs-card-version">2015/2019</div>
+        <div class="vs-card-name">Visual Studio 2015 + 2019</div>
+        <div class="vs-card-format">gitignore-vs2015-2019.txt</div>
+      </div>
+      <div class="vs-card">
+        <div class="vs-card-version">2022</div>
+        <div class="vs-card-name">Visual Studio 2022</div>
+        <div class="vs-card-format">gitignore-vs2022.txt</div>
+      </div>
+    </div>
+    <div class="alert info">
+      <div class="alert-icon">i</div>
+      <div class="alert-body">
+        <div class="alert-title">איך לזהות את גרסת הפרויקט?</div>
+        <p>פתח את קובץ ה-<code>.sln</code> בעורך טקסט. השורה הראשונה היא:</p>
+        <p style="font-family:var(--font-mono);font-size:13px;direction:ltr;text-align:left;background:rgba(0,0,0,.3);padding:8px 12px;border-radius:6px;margin-top:6px;color:var(--accent-hi)">Microsoft Visual Studio Solution File, Format Version XX</p>
+        <p style="margin-top:10px">המספר <code>XX</code> מציין את הגרסה לפי הטבלה הבאה:</p>
+        <ul style="margin:8px 0 0;padding-right:22px">
+          <li><code>Format Version 11</code> — Visual Studio 2010</li>
+          <li><code>Format Version 12</code> — Visual Studio 2015 / 2019</li>
+          <li><code>Format Version 12.00</code> + VisualStudioVersion=17 — Visual Studio 2022</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- VS2010 -->
+  <div class="card">
+    <h3>📄 gitignore ל-VS 2010</h3>
+    <p>פרויקטים ישנים יותר — פחות תיקיות מטא־דאטה, קבצי <code>.suo</code> בינאריים, <code>_ReSharper.*</code> בעייתיים.</p>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-lang">.gitignore · VS 2010</div>
+        <button class="code-copy">Copy</button>
+      </div>
+<pre><code><span class="tok-c"># =========================================</span>
+<span class="tok-c">#  .gitignore for Visual Studio 2010</span>
+<span class="tok-c">#  Project migrated from ClearCase</span>
+<span class="tok-c"># =========================================</span>
+
+<span class="tok-c"># ==== Build output ====</span>
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+build/
+bld/
+[Oo]ut/
+[Ll]og/
+[Ll]ogs/
+
+<span class="tok-c"># ==== Visual Studio 2010 user files ====</span>
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.vspscc
+*.vssscc
+*.ncb
+*.sdf
+*.cachefile
+*.VC.db
+*.VC.opendb
+ipch/
+
+<span class="tok-c"># ==== ReSharper ====</span>
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+<span class="tok-c"># ==== Test results ====</span>
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.VisualState.xml
+TestResult.xml
+nunit-*.xml
+
+<span class="tok-c"># ==== NuGet (early days — may or may not exist) ====</span>
+packages/
+*.nupkg
+!packages/build/
+!packages/repositories.config
+
+<span class="tok-c"># ==== ClearCase leftovers (safety net) ====</span>
+*.keep
+*.keep.*
+*.contrib
+*.contrib.*
+view.dat
+lost+found/
+.copyarea.*
+
+<span class="tok-c"># ==== Windows system files ====</span>
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+<span class="tok-c"># ==== Temp / backup ====</span>
+*.bak
+*.tmp
+*.swp
+*~</code></pre>
+    </div>
+  </div>
+
+  <!-- VS 2015/2019 -->
+  <div class="card">
+    <h3>📄 gitignore ל-VS 2015 + 2019</h3>
+    <p>הגרסאות המרכזיות. כבר יש תיקיית <code>.vs/</code>, תמיכה רחבה ב-NuGet, ובחלק מהפרויקטים גם <code>project.lock.json</code>.</p>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-lang">.gitignore · VS 2015 / 2019</div>
+        <button class="code-copy">Copy</button>
+      </div>
+<pre><code><span class="tok-c"># =========================================</span>
+<span class="tok-c">#  .gitignore for Visual Studio 2015 / 2019</span>
+<span class="tok-c">#  Project migrated from ClearCase</span>
+<span class="tok-c"># =========================================</span>
+
+<span class="tok-c"># ==== Build output ====</span>
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+build/
+bld/
+[Oo]ut/
+[Ll]og/
+[Ll]ogs/
+msbuild.log
+msbuild.err
+msbuild.wrn
+
+<span class="tok-c"># ==== Visual Studio 2015+ cache folder ====</span>
+.vs/
+
+<span class="tok-c"># ==== User-specific files ====</span>
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+<span class="tok-c"># ==== Compiled source ====</span>
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+*.pdb
+*.ilk
+
+<span class="tok-c"># ==== NuGet ====</span>
+*.nupkg
+*.snupkg
+**/packages/*
+!**/packages/build/
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+<span class="tok-c"># ==== Node.js / Web (for web projects) ====</span>
+node_modules/
+npm-debug.log*
+.npm
+bower_components/
+wwwroot/lib/
+
+<span class="tok-c"># ==== ReSharper / Rider ====</span>
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+.idea/
+
+<span class="tok-c"># ==== Test results ====</span>
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.VisualState.xml
+TestResult.xml
+[Cc]overage*/
+coverage.opencover.xml
+coverage.cobertura.xml
+
+<span class="tok-c"># ==== Publish / deployment ====</span>
+[Pp]ublish/
+*.[Pp]ublish.xml
+*.azurePubxml
+*.pubxml
+*.pubxml.user
+PublishScripts/
+
+<span class="tok-c"># ==== ClearCase leftovers ====</span>
+*.keep
+*.keep.*
+*.contrib
+*.contrib.*
+view.dat
+lost+found/
+.copyarea.*
+
+<span class="tok-c"># ==== Windows / OS ====</span>
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+<span class="tok-c"># ==== Temp / backup ====</span>
+*.bak
+*.tmp
+*.swp
+*~</code></pre>
+    </div>
+  </div>
+
+  <!-- VS2022 -->
+  <div class="card">
+    <h3>📄 gitignore ל-VS 2022</h3>
+    <p>הגרסה המודרנית — תמיכה ב-.NET 6/7/8+, <code>.editorconfig</code>, SDK-style projects, ו-UserSecrets.</p>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-lang">.gitignore · VS 2022</div>
+        <button class="code-copy">Copy</button>
+      </div>
+<pre><code><span class="tok-c"># =========================================</span>
+<span class="tok-c">#  .gitignore for Visual Studio 2022</span>
+<span class="tok-c">#  Project migrated from ClearCase</span>
+<span class="tok-c"># =========================================</span>
+
+<span class="tok-c"># ==== Build output ====</span>
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+build/
+bld/
+[Oo]ut/
+[Ll]og/
+[Ll]ogs/
+
+<span class="tok-c"># ==== Visual Studio 2022 cache ====</span>
+.vs/
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+<span class="tok-c"># ==== Compiled / binary ====</span>
+*.dll
+*.exe
+*.pdb
+*.ilk
+*.obj
+*.o
+*.so
+*.class
+
+<span class="tok-c"># ==== .NET SDK / NuGet ====</span>
+*.nupkg
+*.snupkg
+**/packages/*
+!**/packages/build/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+*.nuget.props
+*.nuget.targets
+
+<span class="tok-c"># ==== User secrets (.NET) — never commit! ====</span>
+*.pfx
+*.snk
+secrets.json
+appsettings.*.Local.json
+appsettings.Development.json
+
+<span class="tok-c"># ==== Web / Front-end ====</span>
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.npm
+bower_components/
+wwwroot/lib/
+dist/
+.next/
+.nuxt/
+
+<span class="tok-c"># ==== Rider / ReSharper ====</span>
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+.idea/
+
+<span class="tok-c"># ==== Test / Coverage ====</span>
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.VisualState.xml
+TestResult.xml
+[Cc]overage*/
+coverage.opencover.xml
+coverage.cobertura.xml
+BenchmarkDotNet.Artifacts/
+
+<span class="tok-c"># ==== Publish / Azure / Docker ====</span>
+[Pp]ublish/
+*.[Pp]ublish.xml
+*.azurePubxml
+*.pubxml
+*.pubxml.user
+PublishScripts/
+docker-compose.override.yml
+
+<span class="tok-c"># ==== Logs ====</span>
+*.log
+nlog.xml.log
+serilog-*.txt
+
+<span class="tok-c"># ==== Visual Studio 2022 extras ====</span>
+.localhistory/
+.mfractor/
+[*.]VC.db
+[*.]VC.opendb
+
+<span class="tok-c"># ==== ClearCase leftovers ====</span>
+*.keep
+*.keep.*
+*.contrib
+*.contrib.*
+view.dat
+lost+found/
+.copyarea.*
+
+<span class="tok-c"># ==== OS / Editor ====</span>
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+.DS_Store
+
+<span class="tok-c"># ==== Temp / backup ====</span>
+*.bak
+*.tmp
+*.swp
+*~
+*.orig</code></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>הצבת הקובץ בפרויקט</h3>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-lang">BASH · Place .gitignore</div>
+        <button class="code-copy">Copy</button>
+      </div>
+<pre><code><span class="tok-c"># ודא שאתה בתיקיית הפרויקט ב-_staging</span>
+<span class="tok-cmd">cd</span> <span class="tok-path">/c/Migration/_staging/ProjectGamma</span>
+
+<span class="tok-c"># העתק את התבנית המתאימה (דוגמה ל-VS2019)</span>
+<span class="tok-cmd">cp</span> <span class="tok-path">/c/Migration/_gitignore-templates/gitignore-vs2015-2019.txt</span> <span class="tok-path">.gitignore</span>
+
+<span class="tok-c"># ודא שהקובץ נוצר</span>
+<span class="tok-cmd">ls</span> -la .gitignore</code></pre>
+    </div>
+
+    <div class="alert ok">
+      <div class="alert-icon">✓</div>
+      <div class="alert-body">
+        <div class="alert-title">חוק חשוב</div>
+        <p>קובץ <code>.gitignore</code> צריך להיות ב-<strong>שורש הפרויקט</strong>, באותה רמה של קובץ ה-<code>.sln</code>. אפשר גם להוסיף <code>.gitignore</code> משני בתת-תיקיות אם צריך כללים מקומיים, אבל לרוב לא נדרש.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 04B: VS CODE / ANGULAR ============ -->
+<section class="section" id="gitignore-web">
+  <div class="section-head">
+    <div class="section-num">04<span style="font-size:.55em;color:var(--text-2)">B</span></div>
+    <div>
+      <h2 class="section-title">פרויקטי Web — VS Code / Angular / TypeScript</h2>
+      <p class="section-desc">תבנית gitignore ייעודית לפרויקטי front-end מודרניים, עם דגש על Angular.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>למה צריך gitignore אחר?</h3>
+    <p>פרויקטי Web מבוססי Node.js / Angular / React הם עולם אחר לחלוטין מ-.NET:</p>
+    <div class="rule-grid">
+      <div class="rule-box">
+        <h4>node_modules/</h4>
+        <p>תיקייה ענקית (מאות MB עד GB) שנוצרת מחדש מ-<code>package.json</code> בכל <code>npm install</code>. <strong>לעולם לא ל-Git!</strong></p>
+      </div>
+      <div class="rule-box">
+        <h4>dist/ ו-build/</h4>
+        <p>תוצרי בנייה (compiled bundles, minified JS, source maps). מתחדשים בכל build, אין צורך לשמר אותם.</p>
+      </div>
+      <div class="rule-box">
+        <h4>.env files</h4>
+        <p>מכילים סודות (API keys, DB passwords). חייבים להישאר מחוץ ל-repo. רק <code>.env.example</code> נכנס.</p>
+      </div>
+      <div class="rule-box">
+        <h4>.angular/cache</h4>
+        <p>cache של Angular CLI לזירוז builds. גודל יכול להגיע ל-GB. מקומי בלבד.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>📄 gitignore ל-Angular + TypeScript + VS Code</h3>
+    <p>מתאים ל-Angular 8 ומעלה, וכולל גם תמיכה ב-React, Vue, ו-Node.js בכלל. השתמש בו לפרויקטים שמפותחים ב-VS Code:</p>
+
+    <div class="code">
+      <div class="code-head">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-lang">.gitignore · Angular / TypeScript / VS Code</div>
+        <button class="code-copy">Copy</button>
+      </div>
+<pre><code><span class="tok-c"># =========================================</span>
+<span class="tok-c">#  .gitignore for Angular / TypeScript</span>
+<span class="tok-c">#  IDE: Visual Studio Code</span>
+<span class="tok-c">#  Project migrated from ClearCase</span>
+<span class="tok-c"># =========================================</span>
+
+<span class="tok-c"># ==== Node.js / npm ====</span>
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-store/
+.npm/
+.yarn/
+.yarn-integrity
+package-lock.json.bak
+
+<span class="tok-c"># ==== Build output ====</span>
+dist/
+dist-ssr/
+build/
+out/
+out-tsc/
+tmp/
+*.tsbuildinfo
+.tsbuildinfo
+
+<span class="tok-c"># ==== Angular CLI ====</span>
+.angular/
+.angular/cache/
+/connect.lock
+/libpeerconnection.log
+/typings
+testem.log
+
+<span class="tok-c"># ==== Testing / Coverage ====</span>
+coverage/
+*.lcov
+.nyc_output/
+karma-test-results/
+junit.xml
+e2e/*.js
+e2e/*.map
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
+playwright-report/
+test-results/
+
+<span class="tok-c"># ==== TypeScript ====</span>
+*.js.map
+*.d.ts.map
+
+<span class="tok-c"># ==== Environment / Secrets — חשוב מאוד! ====</span>
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+src/environments/environment.local.ts
+src/environments/environment.prod.ts
+secrets.json
+*.pem
+*.key
+
+<span class="tok-c"># ==== VS Code — שמור רק קבצים משותפים, לא personal ====</span>
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+.history/
+.ionide/
+
+<span class="tok-c"># ==== JetBrains IDEs (WebStorm/Rider) ====</span>
+.idea/
+*.iml
+*.iws
+*.ipr
+
+<span class="tok-c"># ==== Editor / OS ====</span>
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+<span class="tok-c"># ==== Logs ====</span>
+*.log
+logs/
+debug.log
+error.log
+
+<span class="tok-c"># ==== Cache directories ====</span>
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.svelte-kit/
+.turbo/
+.vite/
+.eslintcache
+.stylelintcache
+
+<span class="tok-c"># ==== Storybook ====</span>
+storybook-static/
+.storybook/build/
+
+<span class="tok-c"># ==== Misc ====</span>
+*.bak
+*.tmp
+*.orig
+.tern-port
+.vscode-test/
+
+<span class="tok-c"># ==== ClearCase leftovers ====</span>
+*.keep
+*.keep.*
+*.contrib
+*.contrib.*
+view.dat
+lost+found/
+.copyarea.*</code></pre>
+    </div>
+
+    <div class="alert info">
+      <div class="alert-icon">i</div>
+      <div class="alert-body">
+        <div class="alert-title">למה <code>.vscode/</code> מותר חלקית?</div>
+        <p>קבצים כמו <code>settings.json</code> ו-<code>extensions.json</code> מגדירים את הסגנון לפרויקט (lint rules, format on save, מומלץ-להתקין-extensions) — שווה לשתף עם הצוות. לעומת זאת <code>.history/</code> או הגדרות אישיות אחרות נשארות מקומיות.</p>
+      </div>
+    </div>
+
+    <div class="alert danger">
+      <div class="alert-icon">!</div>
+      <div class="alert-body">
+        <div class="alert-title">שמור על קבצי <code>.env</code> מחוץ ל-Git!</div>
+        <p>זו הטעות הכי נפוצה ומסוכנת בפרויקטי Web. <code>.env</code> בדרך כלל מכיל API keys, סיסמאות DB, ו-tokens. אם הם הגיעו ל-repo בטעות — אפילו במחיקה מאוחרת ההיסטוריה שומרת אותם, וצריך rotate לכל ה-secrets.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>שני קבצים נוספים שכדאי להוסיף לפרויקט Web</h3>
+
+    <h4>📄 <code>.editorconfig</code> — אחידות בין מפתחים</h4>
+    <p>קובץ קטן שמבטיח שכל ה-IDEs מכבדים את אותם כללי עיצוב (indent, line endings):</p>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-lang">.editorconfig</div>
+        <button class="code-copy">Copy</button>
+      </div>
+<pre><code>root = <span class="tok-s">true</span>
+
+[*]
+indent_style = <span class="tok-s">space</span>
+indent_size = <span class="tok-n">2</span>
+end_of_line = <span class="tok-s">lf</span>
+charset = <span class="tok-s">utf-8</span>
+trim_trailing_whitespace = <span class="tok-s">true</span>
+insert_final_newline = <span class="tok-s">true</span>
+
+[*.md]
+trim_trailing_whitespace = <span class="tok-s">false</span>
+
+[*.{ts,js,html,scss,css,json}]
+indent_size = <span class="tok-n">2</span></code></pre>
+    </div>
+
+    <h4>📄 <code>.gitattributes</code> — line endings ושמות קבצים</h4>
+    <p>מבטיח שלא תהיה מלחמת CRLF/LF בין מפתחי Windows ל-Mac/Linux:</p>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-lang">.gitattributes</div>
+        <button class="code-copy">Copy</button>
+      </div>
+<pre><code><span class="tok-c"># נירמול אוטומטי של line endings</span>
+* text=auto eol=lf
+
+<span class="tok-c"># קבצים בינאריים — לא לגעת</span>
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+*.zip binary
+
+<span class="tok-c"># Windows scripts — תמיד CRLF</span>
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+<span class="tok-c"># Shell scripts — תמיד LF</span>
+*.sh text eol=lf</code></pre>
+    </div>
+  </div>
+</section>
+<section class="section" id="gitlab">
+  <div class="section-head">
+    <div class="section-num">05</div>
+    <div>
+      <h2 class="section-title">הכנת GitLab</h2>
+      <p class="section-desc">יצירת Project ריק ב-GitLab שיקבל את הקוד.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>יצירת Project חדש</h3>
+    <ol>
+      <li>התחבר ל-GitLab (בין אם בענן ב-<code>gitlab.com</code> או על שרת פנימי/On-Premise).</li>
+      <li>לחץ על <strong>"New project"</strong> → <strong>"Create blank project"</strong>.</li>
+      <li>מלא את הפרטים:
+        <ul>
+          <li><strong>Project name:</strong> שם ברור, למשל <code>project-gamma</code></li>
+          <li><strong>Project URL:</strong> בחר את הקבוצה (Group) הנכונה</li>
+          <li><strong>Visibility Level:</strong> Private / Internal / Public לפי המדיניות</li>
+          <li><strong>Project Configuration:</strong> <span style="color:var(--danger);font-weight:600">בטל את "Initialize repository with a README"</span> — אנחנו מביאים משלנו</li>
+        </ul>
+      </li>
+      <li>לחץ <strong>"Create project"</strong>.</li>
+      <li>העתק את ה-<strong>Clone URL (HTTPS)</strong> מהמסך שיפתח — נצטרך אותו בשלב ה-push.</li>
+    </ol>
+
+    <div class="alert danger">
+      <div class="alert-icon">!</div>
+      <div class="alert-body">
+        <div class="alert-title">בלי Initialize!</div>
+        <p>אם GitLab ייצור README אוטומטי, ה-remote כבר לא יהיה "ריק" ונצטרך לעשות merge מורכב. תמיד צור פרויקט ריק לחלוטין כשמעבירים קוד קיים.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>אימות — HTTPS או SSH?</h3>
+    <div class="grid-2">
+      <div style="background:var(--bg-2);padding:18px;border-radius:10px;border:1px solid var(--border)">
+        <h4 style="margin-top:0;color:var(--text-0)">HTTPS + Personal Access Token</h4>
+        <p style="font-size:14px;color:var(--text-2)">הכי פשוט ל-Windows. בפעם הראשונה יישמרו ה-credentials על ידי Git Credential Manager.</p>
+        <p style="font-size:14px;color:var(--text-2)"><strong>יצירת Token:</strong> ב-GitLab — <em>User Settings → Access Tokens</em> → הרשאות <code>read_repository</code> + <code>write_repository</code>.</p>
+      </div>
+      <div style="background:var(--bg-2);padding:18px;border-radius:10px;border:1px solid var(--border)">
+        <h4 style="margin-top:0;color:var(--text-0)">SSH Key</h4>
+        <p style="font-size:14px;color:var(--text-2)">בטוח יותר ואין צורך בהקלדת סיסמה. דורש יצירת מפתח והוספתו ל-GitLab.</p>
+      </div>
+    </div>
+
+    <h4>יצירת SSH key (אם בחרת SSH)</h4>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-lang">BASH · SSH key</div>
+        <button class="code-copy">Copy</button>
+      </div>
+<pre><code><span class="tok-c"># יצירת מפתח חדש (אם אין)</span>
+<span class="tok-cmd">ssh-keygen</span> -t ed25519 -C <span class="tok-s">"amit.cohen@company.co.il"</span>
+
+<span class="tok-c"># הצגת המפתח הציבורי — תעתיק אותו ל-GitLab</span>
+<span class="tok-cmd">cat</span> <span class="tok-path">~/.ssh/id_ed25519.pub</span>
+
+<span class="tok-c"># ב-GitLab: User Settings → SSH Keys → הדבק והוסף</span>
+
+<span class="tok-c"># בדיקת חיבור</span>
+<span class="tok-cmd">ssh</span> -T git@gitlab.com</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 06: MIGRATE ============ -->
+<section class="section" id="migrate">
+  <div class="section-head">
+    <div class="section-num">06</div>
+    <div>
+      <h2 class="section-title">העברת הקוד ל-GitLab</h2>
+      <p class="section-desc">הרגע המכריע — מ-staging נקי ל-commit ראשון ו-push.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>שלב 1: אתחול repo מקומי</h3>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-lang">BASH · Initialize</div>
+        <button class="code-copy">Copy</button>
+      </div>
+<pre><code><span class="tok-c"># היכנס לתיקיית הפרויקט הנקייה</span>
+<span class="tok-cmd">cd</span> <span class="tok-path">/c/Migration/_staging/ProjectGamma</span>
+
+<span class="tok-c"># אתחול repository חדש</span>
+<span class="tok-cmd">git</span> init
+
+<span class="tok-c"># (אם ה-default branch אצלך עדיין master — שנה ל-main)</span>
+<span class="tok-cmd">git</span> branch -M main</code></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>שלב 2: בדיקה ראשונה — מה ייכלל ב-commit?</h3>
+    <p>לפני ה-<code>git add</code>, כדאי לוודא שה-<code>.gitignore</code> עובד כמו שצריך:</p>
+
+    <div class="code">
+      <div class="code-head">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-lang">BASH · Dry-run check</div>
+        <button class="code-copy">Copy</button>
+      </div>
+<pre><code><span class="tok-c"># מציג את כל הקבצים שיתווספו ל-commit (כיבד .gitignore)</span>
+<span class="tok-cmd">git</span> status
+
+<span class="tok-c"># רשימת כל הקבצים שלא מתעלמים מהם — בדיקה מדוקדקת</span>
+<span class="tok-cmd">git</span> <span class="tok-cmd">ls-files</span> --others --exclude-standard <span class="tok-op">|</span> <span class="tok-cmd">head</span> -50
+
+<span class="tok-c"># ספירת סך הקבצים שייכנסו</span>
+<span class="tok-cmd">git</span> <span class="tok-cmd">ls-files</span> --others --exclude-standard <span class="tok-op">|</span> <span class="tok-cmd">wc</span> -l
+
+<span class="tok-c"># רשימת קבצים שנקלטים בגלל .gitignore (אם רצית לוודא שמשהו לא נכנס)</span>
+<span class="tok-cmd">git</span> <span class="tok-cmd">ls-files</span> --others --ignored --exclude-standard <span class="tok-op">|</span> <span class="tok-cmd">head</span> -30</code></pre>
+    </div>
+
+    <div class="alert warn">
+      <div class="alert-icon">?</div>
+      <div class="alert-body">
+        <div class="alert-title">רואה קבצים שלא אמורים להיות שם?</div>
+        <p>ערוך את <code>.gitignore</code>, ואל תמשיך. אחרי <code>git add</code> הכול נכנס ל-staging וקשה יותר לתקן. אם כבר עשית <code>git add .</code> בטעות — <code>git reset</code> מחזיר את המצב לפני ה-add.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>שלב 3: Commit ראשון</h3>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-lang">BASH · First commit</div>
+        <button class="code-copy">Copy</button>
+      </div>
+<pre><code><span class="tok-c"># הוספת כל הקבצים ל-staging area</span>
+<span class="tok-cmd">git</span> add .
+
+<span class="tok-c"># ודא שהכול נראה כפי שרצית</span>
+<span class="tok-cmd">git</span> status
+
+<span class="tok-c"># Commit ראשון עם הודעה תיאורית</span>
+<span class="tok-cmd">git</span> commit -m <span class="tok-s">"Initial import from ClearCase</span>
+<span class="tok-s"></span>
+<span class="tok-s">- Source: ClearCase view snapshot (latest)</span>
+<span class="tok-s">- Visual Studio version: 2019</span>
+<span class="tok-s">- Migration date: 2026-04</span>
+<span class="tok-s">- Original location: \\server\ccviews\ProjectGamma"</span></code></pre>
+    </div>
+
+    <div class="alert info">
+      <div class="alert-icon">i</div>
+      <div class="alert-body">
+        <div class="alert-title">הודעת commit מושקעת — למה?</div>
+        <p>זה ה-commit היחיד עם "היסטוריה" במובן מסוים. לרשום כאן מאיפה הגיע הקוד, מאיזו גרסת VS, ומתי — יעזור למפתחים שיצטרפו בעתיד להבין את ההקשר.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>שלב 4: חיבור ל-remote של GitLab</h3>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-lang">BASH · Add remote & push</div>
+        <button class="code-copy">Copy</button>
+      </div>
+<pre><code><span class="tok-c"># HTTPS (דרך Personal Access Token)</span>
+<span class="tok-cmd">git</span> remote add origin <span class="tok-s">https://gitlab.com/your-group/project-gamma.git</span>
+
+<span class="tok-c"># או — SSH (אם הגדרת SSH key)</span>
+<span class="tok-c"># git remote add origin git@gitlab.com:your-group/project-gamma.git</span>
+
+<span class="tok-c"># ודא שה-remote נוסף</span>
+<span class="tok-cmd">git</span> remote -v
+
+<span class="tok-c"># דחיפה ראשונה — יוצרת את ה-branch main ב-GitLab ומקשרת אליו</span>
+<span class="tok-cmd">git</span> push -u origin main</code></pre>
+    </div>
+
+    <div class="alert ok">
+      <div class="alert-icon">✓</div>
+      <div class="alert-body">
+        <div class="alert-title">הדגל <code>-u</code></div>
+        <p><code>-u origin main</code> קובע את ה-upstream לאותו branch, כך שבפעמים הבאות מספיק <code>git push</code> ללא פרמטרים. פעם אחת בלבד!</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>טעויות נפוצות ופתרונות</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>שגיאה / תסמין</th>
+            <th>הסיבה</th>
+            <th>הפתרון</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>rejected (fetch first)</code></td>
+            <td>ה-remote לא ריק</td>
+            <td>בדוק שלא נוצר README ב-GitLab בטעות. אם כן — מחק את ה-repo וצור מחדש ריק.</td>
+          </tr>
+          <tr>
+            <td><code>remote: HTTP Basic: Access denied</code></td>
+            <td>סיסמה/token שגויים</td>
+            <td>צור Personal Access Token חדש ב-GitLab עם הרשאות write_repository.</td>
+          </tr>
+          <tr>
+            <td><code>Filename too long</code></td>
+            <td>נתיבים ארוכים ב-Windows</td>
+            <td>הרץ <code>git config --global core.longpaths true</code> והפעל מחדש את Git Bash.</td>
+          </tr>
+          <tr>
+            <td><code>Large file detected</code></td>
+            <td>קובץ מעל 100MB</td>
+            <td>מצא אותו (<code>git ls-files | xargs ls -l | sort -k 5 -n | tail</code>) ומחק או העבר ל-LFS.</td>
+          </tr>
+          <tr>
+            <td>ה-push מתקיים אבל ארוך מאוד</td>
+            <td>ה-repo גדול (בגלל bin/obj שלא נוקו)</td>
+            <td>בטל את ה-push, חזור לשלב הניקוי, והתחל מחדש.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 07: VERIFY ============ -->
+<section class="section" id="verify">
+  <div class="section-head">
+    <div class="section-num">07</div>
+    <div>
+      <h2 class="section-title">בדיקה ואימות</h2>
+      <p class="section-desc">וידוא שההעברה הצליחה — Clone טרי, Build, Run.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>בדיקת Clone במחשב / תיקייה נפרדת</h3>
+    <p>חשוב לבצע את הבדיקה <strong>מתיקייה חדשה לחלוטין</strong>, לא מ-<code>_staging</code>, כדי לאמת שכל מה שצריך באמת נכנס ל-repo.</p>
+
+    <div class="code">
+      <div class="code-head">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-lang">BASH · Fresh clone test</div>
+        <button class="code-copy">Copy</button>
+      </div>
+<pre><code><span class="tok-c"># צור תיקיית בדיקה נפרדת</span>
+<span class="tok-cmd">mkdir</span> -p <span class="tok-path">/c/Migration/_verify</span>
+<span class="tok-cmd">cd</span> <span class="tok-path">/c/Migration/_verify</span>
+
+<span class="tok-c"># Clone מ-GitLab</span>
+<span class="tok-cmd">git</span> clone <span class="tok-s">https://gitlab.com/your-group/project-gamma.git</span>
+<span class="tok-cmd">cd</span> <span class="tok-path">project-gamma</span>
+
+<span class="tok-c"># בדוק את מבנה הקבצים וההיסטוריה</span>
+<span class="tok-cmd">ls</span> -la
+<span class="tok-cmd">git</span> log --oneline
+<span class="tok-cmd">git</span> <span class="tok-cmd">ls-files</span> <span class="tok-op">|</span> <span class="tok-cmd">wc</span> -l</code></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Build-test ב-Visual Studio</h3>
+    <ol>
+      <li>פתח את קובץ ה-<code>.sln</code> בגרסת Visual Studio המתאימה.</li>
+      <li>בפעם הראשונה VS עשוי להציע לשחזר חבילות NuGet — אשר ותן לו לעבוד.</li>
+      <li>בצע <strong>Build → Clean Solution</strong>, ואז <strong>Build → Rebuild Solution</strong>.</li>
+      <li>ודא ש-0 errors, וש-warnings נראים כרגיל (לא חדשים שקשורים לקבצים חסרים).</li>
+      <li>הרץ את הפרויקט (F5) — ודא התנהגות תקינה.</li>
+    </ol>
+
+    <div class="alert warn">
+      <div class="alert-icon">!</div>
+      <div class="alert-body">
+        <div class="alert-title">אם ה-Build נכשל</div>
+        <p>הסיבות השכיחות: (1) קובץ שנדרש ב-build נכלל ב-<code>.gitignore</code> בטעות — ערוך ועדכן. (2) References לחבילות DLL חיצוניות שלא הועלו ל-repo — שקול להוסיף אותן ל-<code>libs/</code> עם exception ב-gitignore, או להחליף ל-NuGet.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>הוספת קבצים שחסרים ב-Build</h3>
+    <p>אם מתברר שקובץ מסוים נדרש ל-build אבל נחסם על ידי <code>.gitignore</code> — אפשר לעקוף נקודתית:</p>
+
+    <div class="code">
+      <div class="code-head">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-lang">.gitignore · Exception</div>
+        <button class="code-copy">Copy</button>
+      </div>
+<pre><code><span class="tok-c"># דוגמה — הוספת exception לתיקיית libs בתוך הפרויקט</span>
+<span class="tok-c"># כל ה-DLL חסומים...</span>
+*.dll
+
+<span class="tok-c"># ...אבל התיקיות הבאות כן נכנסות</span>
+!libs/**
+!ThirdParty/**</code></pre>
+    </div>
+
+    <div class="code">
+      <div class="code-head">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-lang">BASH · Re-add after gitignore edit</div>
+        <button class="code-copy">Copy</button>
+      </div>
+<pre><code><span class="tok-c"># אחרי שערכת את .gitignore — הוסף את הקבצים שפתאום מותרים</span>
+<span class="tok-cmd">git</span> add .
+
+<span class="tok-cmd">git</span> commit -m <span class="tok-s">"Add required third-party libraries"</span>
+<span class="tok-cmd">git</span> push</code></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>הגדרת GitLab כמקור הרשמי</h3>
+    <ol>
+      <li><strong>Protected Branches:</strong> ב-GitLab → <em>Settings → Repository → Protected Branches</em> — הגן על <code>main</code>.</li>
+      <li><strong>Default Branch:</strong> ודא ש-<code>main</code> הוא ה-default (כבר צריך להיות).</li>
+      <li><strong>Merge Request Settings:</strong> הגדר דרישת approvals אם יש צוות.</li>
+      <li><strong>CI/CD:</strong> במידת הצורך, הוסף <code>.gitlab-ci.yml</code> לבנייה אוטומטית.</li>
+      <li><strong>תיעוד:</strong> עדכן את ה-README במטרה, הוראות build, ו-link לארכיון ה-ClearCase הישן.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============ 08: GIT WORKFLOW ============ -->
+<section class="section" id="workflow">
+  <div class="section-head">
+    <div class="section-num">08</div>
+    <div>
+      <h2 class="section-title">עבודה שוטפת עם Git — המדריך המעשי</h2>
+      <p class="section-desc">איך עובדים יום-יום עם Git, branches ו-commits מ-Visual Studio ומ-VS Code.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>המודל המנטלי — ארבעת האזורים של Git</h3>
+    <p>לפני שצוללים לפקודות, כדאי להבין איפה נמצאים הקבצים שלך בכל רגע. ב-Git יש <strong>ארבעה אזורים</strong>, וכל פעולה מעבירה קובץ ביניהם:</p>
+
+    <div class="branch-diagram">
+      <svg viewBox="0 0 880 280" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#ff6b35;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#fc6d26;stop-opacity:1" />
+          </linearGradient>
+          <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#ff6b35"/>
+          </marker>
+        </defs>
+
+        <!-- Boxes -->
+        <g font-family="Heebo, sans-serif" font-weight="700" font-size="14" fill="#f0f3ff" text-anchor="middle">
+          <rect x="20"  y="100" width="170" height="80" rx="10" fill="#1a2035" stroke="#3d4b73" stroke-width="2"/>
+          <text x="105" y="130">Working</text>
+          <text x="105" y="150">Directory</text>
+          <text x="105" y="170" font-size="11" fill="#8892b3" font-weight="400">הקבצים על הדיסק</text>
+
+          <rect x="240" y="100" width="170" height="80" rx="10" fill="#1a2035" stroke="#3d4b73" stroke-width="2"/>
+          <text x="325" y="130">Staging</text>
+          <text x="325" y="150">Area (Index)</text>
+          <text x="325" y="170" font-size="11" fill="#8892b3" font-weight="400">מה שיכנס ל-commit</text>
+
+          <rect x="460" y="100" width="170" height="80" rx="10" fill="#1a2035" stroke="#ff6b35" stroke-width="2"/>
+          <text x="545" y="130" fill="#ff8555">Local</text>
+          <text x="545" y="150" fill="#ff8555">Repository</text>
+          <text x="545" y="170" font-size="11" fill="#8892b3" font-weight="400">commits שלך, מקומי</text>
+
+          <rect x="680" y="100" width="170" height="80" rx="10" fill="#1a2035" stroke="#fc6d26" stroke-width="2"/>
+          <text x="765" y="130" fill="#fca326">Remote</text>
+          <text x="765" y="150" fill="#fca326">(GitLab)</text>
+          <text x="765" y="170" font-size="11" fill="#8892b3" font-weight="400">השרת המרכזי</text>
+        </g>
+
+        <!-- Arrows forward -->
+        <g stroke="#ff6b35" stroke-width="2" fill="none" marker-end="url(#arrow)">
+          <line x1="190" y1="125" x2="240" y2="125"/>
+          <line x1="410" y1="125" x2="460" y2="125"/>
+          <line x1="630" y1="125" x2="680" y2="125"/>
+        </g>
+
+        <!-- Labels above arrows -->
+        <g font-family="JetBrains Mono, monospace" font-size="12" fill="#ff8555" text-anchor="middle" font-weight="600">
+          <text x="215" y="115">git add</text>
+          <text x="435" y="115">git commit</text>
+          <text x="655" y="115">git push</text>
+        </g>
+
+        <!-- Reverse arrows -->
+        <g stroke="#5a6489" stroke-width="1.5" fill="none" marker-end="url(#arrow)" stroke-dasharray="4,3">
+          <path d="M 240 165 Q 215 200 190 165"/>
+          <path d="M 680 165 Q 545 230 410 165"/>
+        </g>
+
+        <g font-family="JetBrains Mono, monospace" font-size="11" fill="#8892b3" text-anchor="middle">
+          <text x="215" y="220">git restore --staged</text>
+          <text x="545" y="250">git pull / git fetch</text>
+        </g>
+
+        <!-- Top labels -->
+        <g font-family="Heebo, sans-serif" font-size="13" fill="#c8cfe5" text-anchor="middle" font-weight="600">
+          <text x="105" y="80">📝 עורכים</text>
+          <text x="325" y="80">📋 בוחרים</text>
+          <text x="545" y="80">💾 שומרים</text>
+          <text x="765" y="80">☁️ משתפים</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="alert info">
+      <div class="alert-icon">i</div>
+      <div class="alert-body">
+        <div class="alert-title">איך זה עובד בפועל?</div>
+        <p>אתה <strong>עורך</strong> קובץ ב-IDE (Working Directory) → עושה <code>git add</code> שמסמן אותו "מוכן ל-commit" (Staging) → <code>git commit</code> שמכניס אותו להיסטוריה המקומית (Local Repo) → <code>git push</code> שמשתף עם הצוות (Remote/GitLab).</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>אסטרטגיית Branches — איך מארגנים את העבודה</h3>
+    <p>הבחירה הקלאסית למרבית הצוותים: <strong>GitLab Flow</strong> — פשוטה, גמישה, ומתאימה לעבודה גם עצמאית וגם בצוות:</p>
+
+    <div class="branch-diagram">
+      <svg viewBox="0 0 960 320" xmlns="http://www.w3.org/2000/svg">
+        <!-- main line -->
+        <line x1="120" y1="60" x2="920" y2="60" stroke="#ff6b35" stroke-width="3"/>
+        <text x="105" y="65" font-family="Heebo, sans-serif" font-size="14" font-weight="700" fill="#ff8555" text-anchor="end">main</text>
+
+        <!-- develop line -->
+        <line x1="120" y1="160" x2="920" y2="160" stroke="#fca326" stroke-width="3"/>
+        <text x="105" y="165" font-family="Heebo, sans-serif" font-size="14" font-weight="700" fill="#fca326" text-anchor="end">develop</text>
+
+        <!-- feature line -->
+        <line x1="280" y1="260" x2="580" y2="260" stroke="#5c2d91" stroke-width="3"/>
+        <text x="105" y="265" font-family="Heebo, sans-serif" font-size="13" font-weight="700" fill="#8661c5" text-anchor="end">feature/x</text>
+
+        <!-- hotfix line -->
+        <line x1="680" y1="260" x2="860" y2="260" stroke="#ef4444" stroke-width="3"/>
+        <text x="680" y="285" font-family="Heebo, sans-serif" font-size="11" fill="#ef4444">hotfix/y</text>
+
+        <!-- branching arrows -->
+        <path d="M 280 160 Q 260 210 280 260" stroke="#5c2d91" stroke-width="2" fill="none"/>
+        <path d="M 580 260 Q 600 210 580 160" stroke="#5c2d91" stroke-width="2" fill="none"/>
+        <path d="M 680 60 Q 700 160 680 260" stroke="#ef4444" stroke-width="2" fill="none"/>
+        <path d="M 860 260 Q 880 160 860 60" stroke="#ef4444" stroke-width="2" fill="none"/>
+
+        <!-- merge develop to main -->
+        <path d="M 780 160 Q 800 110 780 60" stroke="#fca326" stroke-width="2" fill="none" stroke-dasharray="4,3"/>
+
+        <!-- commits -->
+        <g fill="#ff6b35">
+          <circle cx="180" cy="60" r="6"/>
+          <circle cx="780" cy="60" r="6"/>
+          <circle cx="880" cy="60" r="6"/>
+        </g>
+        <g fill="#fca326">
+          <circle cx="180" cy="160" r="6"/>
+          <circle cx="280" cy="160" r="6"/>
+          <circle cx="580" cy="160" r="6"/>
+          <circle cx="780" cy="160" r="6"/>
+        </g>
+        <g fill="#8661c5">
+          <circle cx="360" cy="260" r="6"/>
+          <circle cx="460" cy="260" r="6"/>
+          <circle cx="530" cy="260" r="6"/>
+        </g>
+        <g fill="#ef4444">
+          <circle cx="740" cy="260" r="6"/>
+          <circle cx="810" cy="260" r="6"/>
+        </g>
+
+        <!-- annotations -->
+        <g font-family="Heebo, sans-serif" font-size="11" fill="#8892b3">
+          <text x="180" y="38" text-anchor="middle">v1.0</text>
+          <text x="780" y="38" text-anchor="middle">v1.1</text>
+          <text x="880" y="38" text-anchor="middle">v1.2</text>
+          <text x="445" y="305" text-anchor="middle">פיתוח פיצ'ר</text>
+          <text x="775" y="310" text-anchor="middle">תיקון דחוף</text>
+        </g>
+      </svg>
+    </div>
+
+    <h4>הענפים — מי אחראי על מה?</h4>
+    <ul>
+      <li><strong>main</strong> — מה שרץ ב-Production. לכל commit כאן צריך להגיע גרסה יציבה. <span style="color:var(--danger)">לא נוגעים ישירות!</span></li>
+      <li><strong>develop</strong> — הענף המרכזי לפיתוח השוטף. כל פיצ'ר חדש מתחיל ממנו וחוזר אליו.</li>
+      <li><strong>feature/*</strong> — ענף לכל פיצ'ר חדש. נוצר מ-develop, מתמזג בחזרה אליו דרך Merge Request.</li>
+      <li><strong>bugfix/*</strong> — לתיקון באגים שאינם דחופים. נוצר ומתמזג כמו feature.</li>
+      <li><strong>hotfix/*</strong> — תיקון דחוף בפרודקשן. נוצר מ-<code>main</code>, חוזר ל-<code>main</code> וגם ל-<code>develop</code>.</li>
+      <li><strong>release/*</strong> — להכנת גרסה לפני release רשמי (לא חובה לכל צוות).</li>
+    </ul>
+
+    <h4>מוסכמת שמות לענפים</h4>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-lang">Branch naming convention</div>
+        <button class="code-copy">Copy</button>
+      </div>
+<pre><code><span class="tok-c"># מבנה: type/ticket-id-short-description</span>
+
+feature/PROJ-123-add-user-profile
+feature/PROJ-145-export-to-excel
+bugfix/PROJ-201-fix-login-timeout
+hotfix/PROJ-310-critical-payment-error
+release/v2.4.0
+chore/update-dependencies
+docs/api-readme</code></pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>מחזור עבודה יומי — Step by Step</h3>
+    <p>זה התסריט שתחזור עליו פעמים רבות בכל יום. שמור אותו בראש:</p>
+
+    <div class="timeline">
+      <div class="timeline-item">
+        <h4>1. בוקר טוב — עדכן את עצמך</h4>
+        <p>לפני שמתחילים לעבוד, מושכים את העדכונים מהצוות: <code>git checkout develop</code> ואז <code>git pull</code>. זה מבטיח שאתה מתחיל מהבסיס העדכני ביותר.</p>
+      </div>
+      <div class="timeline-item">
+        <h4>2. צור branch לפיצ'ר חדש</h4>
+        <p>לעולם <strong>לא</strong> עובדים ישירות על <code>develop</code> או <code>main</code>. צור branch חדש עם <code>git checkout -b feature/PROJ-123-my-feature</code>. השם צריך להיות תיאורי וכולל מספר טיקט אם יש.</p>
+      </div>
+      <div class="timeline-item">
+        <h4>3. עבוד, שמור, וחזור</h4>
+        <p>עורך קוד ב-IDE כרגיל. שומר עם Ctrl+S. Git יזהה כל שינוי אוטומטית. אין צורך לעשות כלום עד שמגיעים לנקודת ביניים משמעותית.</p>
+      </div>
+      <div class="timeline-item">
+        <h4>4. בצע commits קטנים ותכופים</h4>
+        <p>כל פעם שסיימת יחידת עבודה הגיונית (תיקון פונקציה, הוספת רכיב, השלמת test) — עשה commit. <code>git add .</code> ו-<code>git commit -m "..."</code>. עדיף 5 commits קטנים מאחד גדול.</p>
+      </div>
+      <div class="timeline-item">
+        <h4>5. דחוף ל-GitLab</h4>
+        <p>לפחות פעם ביום — <code>git push</code> כדי שהקוד שלך מגובה בשרת. אם זה ה-push הראשון של ה-branch: <code>git push -u origin feature/...</code></p>
+      </div>
+      <div class="timeline-item">
+        <h4>6. סיום פיצ'ר → Merge Request</h4>
+        <p>כשהפיצ'ר מוכן: ב-GitLab → <strong>Merge Requests → New</strong>. בחר source = ה-branch שלך, target = <code>develop</code>. הוסף תיאור, מבקש review, ולחץ Create.</p>
+      </div>
+      <div class="timeline-item">
+        <h4>7. אחרי merge — נקיון</h4>
+        <p>כשה-MR מאושר ונסגר: <code>git checkout develop</code> → <code>git pull</code> → <code>git branch -d feature/PROJ-123-my-feature</code> (מוחק לוקלית). ב-GitLab בדרך כלל יש אופציה למחוק את הענף אוטומטית אחרי merge.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>הפקודות שתשתמש בהן 95% מהזמן</h3>
+
+    <div class="cmd-ref">
+      <div class="cmd-row">
+        <div class="cmd">git status</div>
+        <div class="cmd-desc">מציג את כל השינויים — אילו קבצים שונו, אילו ב-staging, אילו לא tracked. <strong>השתמש בה הרבה!</strong></div>
+      </div>
+      <div class="cmd-row">
+        <div class="cmd">git pull</div>
+        <div class="cmd-desc">מושך את העדכונים האחרונים מ-GitLab למחשב. הפעולה הראשונה כל בוקר.</div>
+      </div>
+      <div class="cmd-row">
+        <div class="cmd">git checkout -b feature/X</div>
+        <div class="cmd-desc">יוצר branch חדש בשם X ועובר אליו. שילוב של <code>git branch X</code> + <code>git checkout X</code>.</div>
+      </div>
+      <div class="cmd-row">
+        <div class="cmd">git checkout develop</div>
+        <div class="cmd-desc">מחליף ל-branch קיים בשם develop. כל השינויים שלא commit-ed יישארו (אלא אם יש קונפליקט).</div>
+      </div>
+      <div class="cmd-row">
+        <div class="cmd">git add .</div>
+        <div class="cmd-desc">מוסיף את כל השינויים בתיקייה הנוכחית ל-staging. אפשר גם <code>git add filename.cs</code> לקובץ ספציפי.</div>
+      </div>
+      <div class="cmd-row">
+        <div class="cmd">git commit -m "msg"</div>
+        <div class="cmd-desc">יוצר commit עם ההודעה. ההודעה צריכה להיות תיאורית וקצרה (50 תווים בשורה הראשונה).</div>
+      </div>
+      <div class="cmd-row">
+        <div class="cmd">git push</div>
+        <div class="cmd-desc">דוחף את ה-commits החדשים שלך ל-GitLab. אחרי -u origin בפעם הראשונה, מספיק <code>git push</code>.</div>
+      </div>
+      <div class="cmd-row">
+        <div class="cmd">git log --oneline -10</div>
+        <div class="cmd-desc">מציג את 10 ה-commits האחרונים בשורה אחת לכל אחד. לסקירה מהירה.</div>
+      </div>
+      <div class="cmd-row">
+        <div class="cmd">git diff</div>
+        <div class="cmd-desc">מראה מה השתנה בקבצים שלא הוספת ל-staging עדיין. <code>git diff --staged</code> מראה את ה-staging.</div>
+      </div>
+      <div class="cmd-row">
+        <div class="cmd">git branch</div>
+        <div class="cmd-desc">רשימת כל ה-branches המקומיים. <code>git branch -a</code> כולל את ה-remote.</div>
+      </div>
+      <div class="cmd-row">
+        <div class="cmd">git stash</div>
+        <div class="cmd-desc">"שומר בצד" שינויים זמנית בלי לעשות commit. שימושי כשצריך פתאום לעבור branch באמצע עבודה.</div>
+      </div>
+      <div class="cmd-row">
+        <div class="cmd">git stash pop</div>
+        <div class="cmd-desc">מחזיר את מה ש-stashed בחזרה לעבודה.</div>
+      </div>
+      <div class="cmd-row">
+        <div class="cmd">git restore filename</div>
+        <div class="cmd-desc">מבטל שינויים בקובץ שעדיין לא ב-staging — מחזיר אותו למצב האחרון של commit.</div>
+      </div>
+      <div class="cmd-row">
+        <div class="cmd">git restore --staged f</div>
+        <div class="cmd-desc">מוציא קובץ מ-staging (חזרה ל-modified). לא מוחק את התוכן, רק את ה-add.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>איך כותבים הודעת commit טובה?</h3>
+    <p>הודעות commit הן <strong>תיעוד</strong> שיישאר לעד. עוד שנה תפתח את ה-log ותרצה להבין מה עשית. כללי זהב:</p>
+
+    <div class="rule-grid">
+      <div class="rule-box do">
+        <h4>✓ נכון</h4>
+        <p style="font-family:var(--font-mono);font-size:12.5px;direction:ltr;text-align:left;background:var(--bg-0);padding:8px 10px;border-radius:6px;color:var(--ok)">Add user profile page with avatar upload</p>
+      </div>
+      <div class="rule-box dont">
+        <h4>✗ שגוי</h4>
+        <p style="font-family:var(--font-mono);font-size:12.5px;direction:ltr;text-align:left;background:var(--bg-0);padding:8px 10px;border-radius:6px;color:var(--danger)">fixed stuff</p>
+      </div>
+      <div class="rule-box do">
+        <h4>✓ נכון</h4>
+        <p style="font-family:var(--font-mono);font-size:12.5px;direction:ltr;text-align:left;background:var(--bg-0);padding:8px 10px;border-radius:6px;color:var(--ok)">Fix null reference in OrderService.Calculate()</p>
+      </div>
+      <div class="rule-box dont">
+        <h4>✗ שגוי</h4>
+        <p style="font-family:var(--font-mono);font-size:12.5px;direction:ltr;text-align:left;background:var(--bg-0);padding:8px 10px;border-radius:6px;color:var(--danger)">bug fix</p>
+      </div>
+    </div>
+
+    <h4>פורמט מומלץ — Conventional Commits</h4>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-lang">Commit message format</div>
+        <button class="code-copy">Copy</button>
+      </div>
+<pre><code><span class="tok-c"># מבנה: type(scope): short description</span>
+<span class="tok-c">#</span>
+<span class="tok-c"># [optional body — explain WHY, not WHAT]</span>
+<span class="tok-c">#</span>
+<span class="tok-c"># [optional footer — references, breaking changes]</span>
+
+feat(auth): add password reset via email
+fix(api): handle empty response from external service
+docs(readme): update installation instructions
+refactor(orders): extract validation to separate class
+test(checkout): add unit tests for discount calculation
+chore(deps): bump Newtonsoft.Json to 13.0.3
+style(ui): align buttons in user profile
+
+<span class="tok-c"># דוגמה מלאה עם body:</span>
+
+feat(reports): add Excel export for monthly summary
+
+Users requested ability to download monthly reports as Excel files
+for offline analysis. Uses ClosedXML library, supports up to 10K rows.
+
+Refs: PROJ-456
+Closes #123</code></pre>
+    </div>
+
+    <div class="alert info">
+      <div class="alert-icon">i</div>
+      <div class="alert-body">
+        <div class="alert-title">סוגי commit נפוצים</div>
+        <p><code>feat</code> — פיצ'ר חדש · <code>fix</code> — תיקון באג · <code>docs</code> — תיעוד · <code>style</code> — עיצוב/פורמט · <code>refactor</code> — שינוי קוד ללא שינוי התנהגות · <code>test</code> — הוספת בדיקות · <code>chore</code> — תחזוקה</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>עבודה מתוך הסביבות הפיתוח</h3>
+    <div class="ide-tabs">
+      <div class="ide-tab active" data-tab="vs">Visual Studio (2019/2022)</div>
+      <div class="ide-tab" data-tab="vscode">VS Code</div>
+      <div class="ide-tab" data-tab="cli">CLI (Git Bash)</div>
+    </div>
+
+    <div class="ide-panel active" data-panel="vs">
+      <h4>Visual Studio 2019 / 2022 — חלון Git Changes</h4>
+      <p>VS מאז 2019 בא עם Git מובנה ומצוין. הכלים העיקריים נמצאים תחת תפריט <strong>View</strong>:</p>
+      <ul>
+        <li><strong>Git Changes</strong> (Ctrl+0, Ctrl+G) — החלון המרכזי. מציג Modified files, Staged files, ושדה הודעת commit.</li>
+        <li><strong>Git Repository</strong> — מציג graph של branches, history, ו-incoming/outgoing commits.</li>
+        <li><strong>Branch picker</strong> — בפינה הימנית-תחתונה. לחיצה פותחת תפריט branch switching, יצירה, מחיקה.</li>
+      </ul>
+
+      <h4>תהליך עבודה מתוך VS</h4>
+      <ol>
+        <li><strong>Pull</strong> — בחלון Git Changes, לחץ על החץ ↓ ליד שם ה-branch.</li>
+        <li><strong>צור branch</strong> — לחץ על שם ה-branch בפינה תחתונה → <em>New Branch</em> → תן שם → <em>Create</em>.</li>
+        <li><strong>ערוך קוד</strong> — VS יסמן בצד שמאל של הקוד מה השתנה (קו צהוב = modified, ירוק = added).</li>
+        <li><strong>Stage + Commit</strong> — בחלון Git Changes לחץ <strong>+</strong> ליד קובץ ל-stage, או "Stage All". הקלד הודעה. לחץ <strong>Commit Staged</strong>.</li>
+        <li><strong>Push</strong> — לחץ על החץ ↑ או על "Push" בחלון Git Changes.</li>
+        <li><strong>Merge Request</strong> — VS יציע "Create Merge Request" — מקפיץ את הדפדפן ל-GitLab.</li>
+      </ol>
+
+      <div class="alert ok">
+        <div class="alert-icon">★</div>
+        <div class="alert-body">
+          <div class="alert-title">טיפ ל-VS 2022</div>
+          <p>הפעל את <em>Tools → Options → Source Control → Git Global Settings</em> וודא ש-<code>Commit changes after merge by default</code> מסומן. חוסך לחיצה.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="ide-panel" data-panel="vscode">
+      <h4>VS Code — Source Control panel</h4>
+      <p>ב-VS Code, Git מובנה ב-Activity Bar בצד שמאל (אייקון של branches). מקש קיצור: <strong>Ctrl+Shift+G</strong>.</p>
+
+      <ul>
+        <li><strong>Source Control panel</strong> — מציג את כל השינויים בחלוקה ל-Staged Changes ו-Changes.</li>
+        <li><strong>Status Bar בתחתית</strong> — מציג את ה-branch הנוכחי, מספר הקבצים שהשתנו, ועדכונים זמינים. לחיצה פותחת תפריט branches.</li>
+        <li><strong>Gutter indicators</strong> — בצד שמאל של כל קובץ פתוח מסומנים בצבעים השינויים: ירוק (חדש), כחול (שונה), אדום (נמחק).</li>
+      </ul>
+
+      <h4>תהליך עבודה מתוך VS Code</h4>
+      <ol>
+        <li><strong>Pull</strong> — לחץ על שם ה-branch ב-status bar → <em>Pull</em>. או Ctrl+Shift+P → "Git: Pull".</li>
+        <li><strong>צור branch</strong> — לחץ על שם ה-branch → <em>Create new branch</em> → הקלד שם.</li>
+        <li><strong>ערוך קוד</strong> — שמור עם Ctrl+S. סימוני שינויים יופיעו ב-Source Control.</li>
+        <li><strong>Stage</strong> — בחלון Source Control, רחף על שם הקובץ ולחץ <strong>+</strong>. או "Stage All Changes".</li>
+        <li><strong>Commit</strong> — הקלד הודעה בשדה למעלה, לחץ <strong>✓ Commit</strong> (או Ctrl+Enter).</li>
+        <li><strong>Push</strong> — לחץ על "..." → <em>Push</em>. או על האייקון ↑ ב-status bar.</li>
+      </ol>
+
+      <h4>Extensions מומלצים</h4>
+      <ul>
+        <li><strong>GitLens</strong> — מציג ליד כל שורה מי כתב אותה ומתי, היסטוריית קובץ, blame view, ו-graph מתקדם.</li>
+        <li><strong>Git Graph</strong> — מציג graph ויזואלי של כל ה-commits וה-branches.</li>
+        <li><strong>GitLab Workflow</strong> — אינטגרציה ישירה עם MRs, issues, ו-CI/CD pipelines של GitLab.</li>
+        <li><strong>Conventional Commits</strong> — עוזר לכתוב הודעות commit בפורמט הנכון.</li>
+      </ul>
+    </div>
+
+    <div class="ide-panel" data-panel="cli">
+      <h4>Git Bash / Terminal — הדרך הקלאסית</h4>
+      <p>גם אם אתה משתמש ב-IDE, חשוב לדעת לעבוד מ-CLI. כשמשהו נשבר, ה-CLI נותן לך שליטה מלאה ולוגים מפורטים. לפעמים הוא גם פשוט מהיר יותר.</p>
+
+      <div class="code">
+        <div class="code-head">
+          <div class="code-dots"><span></span><span></span><span></span></div>
+          <div class="code-lang">BASH · Daily workflow</div>
+          <button class="code-copy">Copy</button>
+        </div>
+<pre><code><span class="tok-c"># בוקר — עדכון</span>
+<span class="tok-cmd">git</span> checkout develop
+<span class="tok-cmd">git</span> pull
+
+<span class="tok-c"># התחלת פיצ'ר חדש</span>
+<span class="tok-cmd">git</span> checkout -b feature/PROJ-123-add-export
+
+<span class="tok-c"># ... עובדים ב-IDE ...</span>
+
+<span class="tok-c"># בדיקה לפני commit</span>
+<span class="tok-cmd">git</span> status
+<span class="tok-cmd">git</span> diff
+
+<span class="tok-c"># commit ראשון</span>
+<span class="tok-cmd">git</span> add .
+<span class="tok-cmd">git</span> commit -m <span class="tok-s">"feat(reports): add Excel export base structure"</span>
+
+<span class="tok-c"># ... ממשיכים לעבוד ועוד commits ...</span>
+
+<span class="tok-cmd">git</span> add src/services/export.service.ts
+<span class="tok-cmd">git</span> commit -m <span class="tok-s">"feat(reports): implement column mapping logic"</span>
+
+<span class="tok-c"># push ראשון של ה-branch</span>
+<span class="tok-cmd">git</span> push -u origin feature/PROJ-123-add-export
+
+<span class="tok-c"># pushים הבאים — פשוט:</span>
+<span class="tok-cmd">git</span> push
+
+<span class="tok-c"># סיום היום — לוודא שהכול גובה</span>
+<span class="tok-cmd">git</span> status
+<span class="tok-cmd">git</span> log --oneline -5</code></pre>
+      </div>
+
+      <h4>Aliases שימושיים — חוסכים זמן יקר</h4>
+      <div class="code">
+        <div class="code-head">
+          <div class="code-dots"><span></span><span></span><span></span></div>
+          <div class="code-lang">BASH · Git aliases</div>
+          <button class="code-copy">Copy</button>
+        </div>
+<pre><code><span class="tok-c"># הוסף לקובץ ~/.gitconfig או הרץ פעם אחת:</span>
+
+<span class="tok-cmd">git</span> config --global alias.s <span class="tok-s">"status -sb"</span>
+<span class="tok-cmd">git</span> config --global alias.co <span class="tok-s">"checkout"</span>
+<span class="tok-cmd">git</span> config --global alias.cb <span class="tok-s">"checkout -b"</span>
+<span class="tok-cmd">git</span> config --global alias.br <span class="tok-s">"branch"</span>
+<span class="tok-cmd">git</span> config --global alias.cm <span class="tok-s">"commit -m"</span>
+<span class="tok-cmd">git</span> config --global alias.last <span class="tok-s">"log -1 HEAD"</span>
+<span class="tok-cmd">git</span> config --global alias.lg <span class="tok-s">"log --oneline --graph --decorate --all -20"</span>
+<span class="tok-cmd">git</span> config --global alias.unstage <span class="tok-s">"restore --staged"</span>
+<span class="tok-cmd">git</span> config --global alias.amend <span class="tok-s">"commit --amend --no-edit"</span>
+
+<span class="tok-c"># עכשיו במקום: git status -sb → git s</span>
+<span class="tok-c"># במקום: git checkout -b feature/x → git cb feature/x</span></code></pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>תרחישים יומיומיים — איך פותרים?</h3>
+
+    <h4>🔄 צריך לעבור branch באמצע עבודה (יש שינויים לא-commit-ed)</h4>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-lang">BASH · Stash workflow</div>
+        <button class="code-copy">Copy</button>
+      </div>
+<pre><code><span class="tok-c"># שמור את השינויים זמנית</span>
+<span class="tok-cmd">git</span> stash save <span class="tok-s">"WIP: working on user form validation"</span>
+
+<span class="tok-c"># עבור ל-branch אחר ועשה מה שצריך</span>
+<span class="tok-cmd">git</span> checkout main
+<span class="tok-c"># ... do stuff ...</span>
+
+<span class="tok-c"># חזור ל-branch המקורי ושחזר את השינויים</span>
+<span class="tok-cmd">git</span> checkout feature/my-work
+<span class="tok-cmd">git</span> stash pop
+
+<span class="tok-c"># בונוס: רשימת כל ה-stashes</span>
+<span class="tok-cmd">git</span> stash list</code></pre>
+    </div>
+
+    <h4>↩️ ביצעתי commit עם הודעה שגויה</h4>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-lang">BASH · Amend commit</div>
+        <button class="code-copy">Copy</button>
+      </div>
+<pre><code><span class="tok-c"># רק אם עוד לא עשית push! משנה את ה-commit האחרון</span>
+<span class="tok-cmd">git</span> commit --amend -m <span class="tok-s">"Correct commit message"</span>
+
+<span class="tok-c"># אם רוצה גם להוסיף קובץ שכחת:</span>
+<span class="tok-cmd">git</span> add forgotten-file.cs
+<span class="tok-cmd">git</span> commit --amend --no-edit</code></pre>
+    </div>
+
+    <h4>⚠️ עשיתי שינוי בטעות — איך מבטלים?</h4>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-lang">BASH · Undo changes</div>
+        <button class="code-copy">Copy</button>
+      </div>
+<pre><code><span class="tok-c"># בטל שינויים בקובץ ספציפי (שלא ב-staging)</span>
+<span class="tok-cmd">git</span> restore filename.cs
+
+<span class="tok-c"># בטל את כל השינויים בכל הקבצים</span>
+<span class="tok-cmd">git</span> restore .
+
+<span class="tok-c"># הוצא קובץ מ-staging (אם בטעות עשית git add)</span>
+<span class="tok-cmd">git</span> restore --staged filename.cs
+
+<span class="tok-c"># בטל את ה-commit האחרון אבל השאר את השינויים בקבצים (לא push-ed)</span>
+<span class="tok-cmd">git</span> reset --soft HEAD~1
+
+<span class="tok-c"># בטל את ה-commit האחרון ומחק את כל השינויים — זהירות!</span>
+<span class="tok-cmd">git</span> reset --hard HEAD~1</code></pre>
+    </div>
+
+    <div class="alert danger">
+      <div class="alert-icon">!</div>
+      <div class="alert-body">
+        <div class="alert-title">זהירות עם <code>--hard</code> ו-<code>force push</code></div>
+        <p><code>git reset --hard</code> מוחק שינויים <strong>לצמיתות</strong>. <code>git push --force</code> יכול למחוק עבודה של אחרים מה-remote. אם לא בטוח — תשאל לפני שתפעיל.</p>
+      </div>
+    </div>
+
+    <h4>💥 התרחש Merge Conflict</h4>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-lang">BASH · Resolve conflict</div>
+        <button class="code-copy">Copy</button>
+      </div>
+<pre><code><span class="tok-c"># ראית את ההודעה: CONFLICT (content): Merge conflict in src/file.ts</span>
+
+<span class="tok-c"># 1. בדוק אילו קבצים בקונפליקט</span>
+<span class="tok-cmd">git</span> status
+
+<span class="tok-c"># 2. פתח את הקבצים ב-IDE - תראה סימונים כמו:</span>
+<span class="tok-c">#    &lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</span>
+<span class="tok-c">#    הקוד שלך</span>
+<span class="tok-c">#    =======</span>
+<span class="tok-c">#    הקוד מה-branch השני</span>
+<span class="tok-c">#    &gt;&gt;&gt;&gt;&gt;&gt;&gt; develop</span>
+
+<span class="tok-c"># 3. ערוך ידנית — מחק את הסימונים, השאר רק את הגרסה הסופית</span>
+
+<span class="tok-c"># 4. סמן שהקונפליקט נפתר</span>
+<span class="tok-cmd">git</span> add src/file.ts
+
+<span class="tok-c"># 5. סיים את ה-merge</span>
+<span class="tok-cmd">git</span> commit
+<span class="tok-c"># (Git יציע הודעה אוטומטית — אפשר להשאיר)</span></code></pre>
+    </div>
+
+    <div class="alert info">
+      <div class="alert-icon">i</div>
+      <div class="alert-body">
+        <div class="alert-title">VS Code פותר conflicts יפה</div>
+        <p>פתח את הקובץ ב-VS Code — מעל כל קונפליקט יופיעו כפתורים: <em>Accept Current Change</em>, <em>Accept Incoming Change</em>, <em>Accept Both</em>, או <em>Compare Changes</em>. לחיצה אחת ו-VS Code עושה את העריכה.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>10 הכללים הזהובים</h3>
+    <div class="rule-grid">
+      <div class="rule-box do">
+        <h4>1. Pull לפני שמתחילים</h4>
+        <p>תמיד התחל יום עבודה עם <code>git pull</code> על develop. חוסך מערבולת מאוחר יותר.</p>
+      </div>
+      <div class="rule-box do">
+        <h4>2. Branch לכל פיצ'ר</h4>
+        <p>אף פעם לא ישירות על main/develop. branch ייעודי = שלוות נפש.</p>
+      </div>
+      <div class="rule-box do">
+        <h4>3. Commit קטנים ותכופים</h4>
+        <p>5 commits קטנים &gt; commit אחד גדול. קל יותר לסקירה ו-revert.</p>
+      </div>
+      <div class="rule-box do">
+        <h4>4. הודעות תיאוריות</h4>
+        <p>"Fix login bug" עדיף על "fix". "Add export feature" עדיף על "wip".</p>
+      </div>
+      <div class="rule-box do">
+        <h4>5. Push לפחות פעם ביום</h4>
+        <p>קוד שלא ב-GitLab — לא קיים. הדיסק שלך יכול להישבר היום.</p>
+      </div>
+      <div class="rule-box dont">
+        <h4>6. אל תעשה commit ל-secrets</h4>
+        <p>סיסמאות, API keys, certificates — לעולם לא ב-Git. רק ב-<code>.env</code> מקומי.</p>
+      </div>
+      <div class="rule-box dont">
+        <h4>7. אל תעשה force push לענפים משותפים</h4>
+        <p>הורס עבודה של אחרים. רק על branch אישי שלך, ובזהירות.</p>
+      </div>
+      <div class="rule-box dont">
+        <h4>8. אל תעלה קבצים גדולים</h4>
+        <p>סרטונים, מאגרי DB, dumps — חוץ מ-Git. השתמש ב-LFS או storage נפרד.</p>
+      </div>
+      <div class="rule-box dont">
+        <h4>9. אל תערבב פיצ'רים ב-branch אחד</h4>
+        <p>פיצ'ר חדש = branch חדש. תיקון באג = branch נפרד. קל יותר לעקוב ולהפוך.</p>
+      </div>
+      <div class="rule-box do">
+        <h4>10. בקש Code Review</h4>
+        <p>גם אם אתה לבד — חזור על הקוד שלך לפני merge. עוד עיניים = פחות באגים.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 09: CHECKLIST ============ -->
+<section class="section" id="checklist">
+  <div class="section-head">
+    <div class="section-num">09</div>
+    <div>
+      <h2 class="section-title">צ'קליסט ההעברה</h2>
+      <p class="section-desc">לחץ על כל פריט שהשלמת. מתעדכן בזיכרון הדפדפן.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>לפני ההעברה</h3>
+    <ul class="checklist" data-list="pre">
+      <li><div class="check-box"></div><div class="check-text">Git for Windows מותקן (<code>git --version</code> עובד ב-Git Bash)</div></li>
+      <li><div class="check-box"></div><div class="check-text">הגדרות git הגלובליות בוצעו (user.name, user.email, autocrlf)</div></li>
+      <li><div class="check-box"></div><div class="check-text">Personal Access Token או SSH Key הוגדרו ב-GitLab</div></li>
+      <li><div class="check-box"></div><div class="check-text">Project ריק (ללא README) נוצר ב-GitLab</div></li>
+      <li><div class="check-box"></div><div class="check-text">זוהתה גרסת Visual Studio של הפרויקט</div></li>
+    </ul>
+
+    <h3>במהלך ההעברה</h3>
+    <ul class="checklist" data-list="during">
+      <li><div class="check-box"></div><div class="check-text">הקוד הועתק מ-<code>_sources</code> ל-<code>_staging</code></div></li>
+      <li><div class="check-box"></div><div class="check-text">קבצי ClearCase נוקו (<code>.keep</code>, <code>.contrib</code>, <code>lost+found</code>)</div></li>
+      <li><div class="check-box"></div><div class="check-text">Build artifacts נמחקו (<code>bin</code>, <code>obj</code>, <code>.vs</code>, <code>packages</code>)</div></li>
+      <li><div class="check-box"></div><div class="check-text">גודל הפרויקט מתחת ל-1GB</div></li>
+      <li><div class="check-box"></div><div class="check-text"><code>.gitignore</code> מתאים לגרסת VS נוצר בשורש</div></li>
+      <li><div class="check-box"></div><div class="check-text">רשימת הקבצים ב-<code>git status</code> נראית תקינה</div></li>
+      <li><div class="check-box"></div><div class="check-text">Commit ראשון עם הודעה תיאורית בוצע</div></li>
+      <li><div class="check-box"></div><div class="check-text">Remote נוסף ו-push עלה בהצלחה</div></li>
+    </ul>
+
+    <h3>אחרי ההעברה</h3>
+    <ul class="checklist" data-list="post">
+      <li><div class="check-box"></div><div class="check-text">Fresh clone בוצע מתיקייה נפרדת</div></li>
+      <li><div class="check-box"></div><div class="check-text">הפרויקט נפתח ב-VS ללא שגיאות</div></li>
+      <li><div class="check-box"></div><div class="check-text">Build עובר בצורה נקייה (0 errors)</div></li>
+      <li><div class="check-box"></div><div class="check-text">הפרויקט רץ כצפוי (F5)</div></li>
+      <li><div class="check-box"></div><div class="check-text">Protected Branches הוגדרו ב-GitLab</div></li>
+      <li><div class="check-box"></div><div class="check-text">README עם הנחיות build עודכן</div></li>
+      <li><div class="check-box"></div><div class="check-text">הצוות קיבל את ה-clone URL החדש</div></li>
+      <li><div class="check-box"></div><div class="check-text">ה-ClearCase view הישן סומן Read-Only / Archived</div></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 09: RECAP ============ -->
+<section class="section" id="recap">
+  <div class="section-head">
+    <div class="section-num">10</div>
+    <div>
+      <h2 class="section-title">סיכום ותסריט מהיר</h2>
+      <p class="section-desc">כל התהליך המלא, בבלוק אחד, לעתיד הקרוב שלך.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>הסקריפט המלא — פרויקט יחיד</h3>
+    <div class="code">
+      <div class="code-head">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <div class="code-lang">BASH · Full flow</div>
+        <button class="code-copy">Copy</button>
+      </div>
+<pre><code><span class="tok-c">#====== הגדרות — ערוך לפי הפרויקט ======</span>
+<span class="tok-v">PROJECT_NAME</span>=<span class="tok-s">"ProjectGamma"</span>
+<span class="tok-v">VS_VERSION</span>=<span class="tok-s">"2019"</span>
+<span class="tok-v">GITLAB_URL</span>=<span class="tok-s">"https://gitlab.com/your-group/project-gamma.git"</span>
+
+<span class="tok-c">#====== 1. העתקה ל-staging ======</span>
+<span class="tok-cmd">cd</span> <span class="tok-path">/c/Migration</span>
+<span class="tok-cmd">cp</span> -r <span class="tok-s">"_sources/${PROJECT_NAME}-VS${VS_VERSION}"</span> <span class="tok-s">"_staging/${PROJECT_NAME}"</span>
+<span class="tok-cmd">cd</span> <span class="tok-s">"_staging/${PROJECT_NAME}"</span>
+
+<span class="tok-c">#====== 2. ניקוי ClearCase ======</span>
+<span class="tok-cmd">find</span> . -type d -name <span class="tok-s">"lost+found"</span> -exec <span class="tok-cmd">rm</span> -rf {} +
+<span class="tok-cmd">find</span> . -name <span class="tok-s">"*.keep*"</span> -delete
+<span class="tok-cmd">find</span> . -name <span class="tok-s">"*.contrib*"</span> -delete
+<span class="tok-cmd">find</span> . -name <span class="tok-s">"view.dat"</span> -delete
+
+<span class="tok-c">#====== 3. ניקוי Build artifacts ======</span>
+<span class="tok-cmd">find</span> . -type d \<span class="tok-op">\(</span> -name <span class="tok-s">"bin"</span> -o -name <span class="tok-s">"obj"</span> -o -name <span class="tok-s">".vs"</span> \
+  -o -name <span class="tok-s">"packages"</span> -o -name <span class="tok-s">"node_modules"</span> \<span class="tok-op">\)</span> -exec <span class="tok-cmd">rm</span> -rf {} +
+<span class="tok-cmd">find</span> . -name <span class="tok-s">"*.suo"</span> -delete
+<span class="tok-cmd">find</span> . -name <span class="tok-s">"*.user"</span> -delete
+
+<span class="tok-c">#====== 4. הצבת .gitignore ======</span>
+<span class="tok-cmd">cp</span> <span class="tok-s">"../../_gitignore-templates/gitignore-vs${VS_VERSION}.txt"</span> .gitignore
+
+<span class="tok-c">#====== 5. Init + Commit + Push ======</span>
+<span class="tok-cmd">git</span> init
+<span class="tok-cmd">git</span> branch -M main
+<span class="tok-cmd">git</span> add .
+<span class="tok-cmd">git</span> status   <span class="tok-c"># בדיקה אחרונה!</span>
+<span class="tok-cmd">git</span> commit -m <span class="tok-s">"Initial import from ClearCase (VS${VS_VERSION})"</span>
+<span class="tok-cmd">git</span> remote add origin <span class="tok-s">"$GITLAB_URL"</span>
+<span class="tok-cmd">git</span> push -u origin main
+
+<span class="tok-cmd">echo</span> <span class="tok-s">"✓ Migration complete: $PROJECT_NAME"</span></code></pre>
+    </div>
+
+    <div class="alert info">
+      <div class="alert-icon">i</div>
+      <div class="alert-body">
+        <div class="alert-title">עצה אחרונה</div>
+        <p>אל תריץ את הסקריפט הזה אוטומטית בלי <code>git status</code> באמצע. ההעברה הראשונה של כל פרויקט דורשת עין אנושית. אחרי שהצלחת 2-3 פרויקטים — מרגישים את הקצב, ואפשר לאוטומט.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <p>מדריך העברה מ-<strong>ClearCase</strong> אל <strong>GitLab</strong> · גרסאות VS 2010 / 2015 / 2019 / 2022</p>
+  <p style="margin-top:8px">הוכן במיוחד עבור Amit · Migration Guide 2026</p>
+</footer>
+
+</div>
+
+<script>
+// Copy to clipboard functionality
+document.querySelectorAll('.code-copy').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const codeBlock = btn.closest('.code').querySelector('pre code');
+    const text = codeBlock.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'Copied ✓';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copy';
+        btn.classList.remove('copied');
+      }, 1500);
+    });
+  });
+});
+
+// Interactive checklist
+document.querySelectorAll('.checklist').forEach(list => {
+  const key = 'cc2gl-' + list.dataset.list;
+  const saved = {};
+  try {
+    const raw = {};
+    // Since localStorage is restricted, use in-memory only
+    // State persists during the session only
+  } catch(e){}
+
+  list.querySelectorAll('li').forEach((li, idx) => {
+    li.addEventListener('click', () => {
+      li.classList.toggle('done');
+    });
+  });
+});
+
+// Smooth scroll offset for nav
+document.querySelectorAll('.nav-links a').forEach(link => {
+  link.addEventListener('click', e => {
+    const target = document.querySelector(link.getAttribute('href'));
+    if (target) {
+      e.preventDefault();
+      target.scrollIntoView({behavior:'smooth',block:'start'});
+    }
+  });
+});
+
+// IDE tabs
+document.querySelectorAll('.ide-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const tabName = tab.dataset.tab;
+    const container = tab.closest('.card');
+    container.querySelectorAll('.ide-tab').forEach(t => t.classList.remove('active'));
+    container.querySelectorAll('.ide-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    container.querySelector(`.ide-panel[data-panel="${tabName}"]`).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
