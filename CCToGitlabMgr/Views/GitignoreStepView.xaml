@@ -139,14 +139,20 @@
         </Border>
 
         <!-- Info -->
-        <Border Background="#143B82F6" BorderBrush="#4D3B82F6" BorderThickness="1" CornerRadius="8" Padding="16,12">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="i" FontWeight="Bold" Foreground="#FF3B82F6" FontSize="16" Margin="0,0,12,0" VerticalAlignment="Top"/>
-                <TextBlock TextWrapping="Wrap" Foreground="{StaticResource Text1Brush}" FontSize="13">
-                    <Run FontWeight="Bold" Foreground="{StaticResource Text0Brush}">.gitignore must be at the project root, </Run>
-                    <Run>at the same level as the .sln file. The template auto-detected from Step 2 is pre-selected above.</Run>
-                </TextBlock>
-            </StackPanel>
+        <Border Background="#143B82F6" BorderBrush="#4D3B82F6" BorderThickness="1" CornerRadius="8" Padding="18,14">
+            <DockPanel>
+                <TextBlock Text="i" FontWeight="Bold" Foreground="#FF3B82F6" FontSize="18"
+                           DockPanel.Dock="Left" Margin="0,2,14,0" VerticalAlignment="Top"/>
+                <StackPanel>
+                    <TextBlock Text="File Location" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" FontSize="13" Margin="0,0,0,8"/>
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,5">
+                        <Run FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource AccentHiBrush}">.gitignore</Run><Run xml:space="preserve"> must be at the project root — same level as the </Run><Run FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource AccentHiBrush}">.sln</Run><Run xml:space="preserve"> file.</Run>
+                    </TextBlock>
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" TextWrapping="Wrap">
+                        <Run>The template auto-detected from Step 2 is pre-selected above.</Run>
+                    </TextBlock>
+                </StackPanel>
+            </DockPanel>
         </Border>
     </StackPanel>
 </UserControl>

@@ -165,6 +165,67 @@ namespace CCToGitlabMgr.Services
             return await _runner.RunGitAsync($"log --oneline -{count}", workingDir, ct);
         }
 
+        public async Task<CommandResult> LogDetailedAsync(string workingDir, int count = 30, CancellationToken ct = default)
+        {
+            Output?.Invoke($"> git log -{count} --pretty=format:...");
+            return await _runner.RunGitAsync(
+                $"log -{count} --pretty=format:\"%h|%ai|%an|%s\"",
+                workingDir, ct);
+        }
+
+        // === Tags ===
+
+        public async Task<CommandResult> CreateTagAsync(string workingDir, string tagName, string message = null, CancellationToken ct = default)
+        {
+            if (string.IsNullOrEmpty(message))
+            {
+                Output?.Invoke($"> git tag {tagName}");
+                return await _runner.RunGitAsync($"tag \"{tagName}\"", workingDir, ct);
+            }
+            else
+            {
+                var escapedMsg = message.Replace("\"", "\\\"");
+                Output?.Invoke($"> git tag -a {tagName} -m \"{TruncateForDisplay(message)}\"");
+                return await _runner.RunGitAsync($"tag -a \"{tagName}\" -m \"{escapedMsg}\"", workingDir, ct);
+            }
+        }
+
+        public async Task<CommandResult> ListTagsAsync(string workingDir, CancellationToken ct = default)
+        {
+            Output?.Invoke("> git tag -l --sort=-v:refname");
+            return await _runner.RunGitAsync("tag -l --sort=-v:refname", workingDir, ct);
+        }
+
+        public async Task<CommandResult> ListTagsWithMessagesAsync(string workingDir, CancellationToken ct = default)
+        {
+            Output?.Invoke("> git tag -l -n99 --sort=-v:refname");
+            return await _runner.RunGitAsync("tag -l -n99 --sort=-v:refname", workingDir, ct);
+        }
+
+        public async Task<CommandResult> PushTagAsync(string workingDir, string tagName, string remote = "origin", CancellationToken ct = default)
+        {
+            Output?.Invoke($"> git push {remote} {tagName}");
+            return await _runner.RunGitAsync($"push \"{remote}\" \"{tagName}\"", workingDir, ct);
+        }
+
+        public async Task<CommandResult> PushAllTagsAsync(string workingDir, string remote = "origin", CancellationToken ct = default)
+        {
+            Output?.Invoke($"> git push {remote} --tags");
+            return await _runner.RunGitAsync($"push \"{remote}\" --tags", workingDir, ct);
+        }
+
+        public async Task<CommandResult> DeleteTagAsync(string workingDir, string tagName, CancellationToken ct = default)
+        {
+            Output?.Invoke($"> git tag -d {tagName}");
+            return await _runner.RunGitAsync($"tag -d \"{tagName}\"", workingDir, ct);
+        }
+
+        public async Task<CommandResult> ShowTagAsync(string workingDir, string tagName, CancellationToken ct = default)
+        {
+            Output?.Invoke($"> git show {tagName}");
+            return await _runner.RunGitAsync($"show \"{tagName}\" --no-patch", workingDir, ct);
+        }
+
         // === Stash ===
 
         public async Task<CommandResult> StashAsync(string workingDir, string message = null, CancellationToken ct = default)

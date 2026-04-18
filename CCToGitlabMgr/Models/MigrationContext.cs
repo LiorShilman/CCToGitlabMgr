@@ -1,8 +1,29 @@
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using CCToGitlabMgr.ViewModels;
 
 namespace CCToGitlabMgr.Models
 {
+    public class PreservedSubDir : BaseViewModel
+    {
+        /// <summary>Full path of the subdirectory</summary>
+        public string FullPath { get; set; }
+
+        /// <summary>Path relative to staging root (e.g. MyApp\bin\Debug\Data)</summary>
+        public string RelativePath { get; set; }
+
+        /// <summary>Name of the parent build folder (e.g. Debug, Release, bin)</summary>
+        public string ParentBuildDir { get; set; }
+
+        /// <summary>Just the folder name (e.g. Data)</summary>
+        public string Name { get; set; }
+
+        private bool _isPreserved = true;
+        /// <summary>If true, this folder will be kept and added as gitignore exception</summary>
+        public bool IsPreserved { get => _isPreserved; set => SetProperty(ref _isPreserved, value); }
+    }
+
+
     public class MigrationContext : BaseViewModel
     {
         // == Step 1: Git Config ==
@@ -85,6 +106,9 @@ namespace CCToGitlabMgr.Models
         private int _totalFilesForCommit;
         public int TotalFilesForCommit { get => _totalFilesForCommit; set => SetProperty(ref _totalFilesForCommit, value); }
 
+        // == Preserved subdirectories inside build output ==
+        public ObservableCollection<PreservedSubDir> PreservedSubDirs { get; } = new ObservableCollection<PreservedSubDir>();
+
         // == Checklist ==
         private List<ChecklistItem> _checklistItems;
         public List<ChecklistItem> ChecklistItems
@@ -132,6 +156,8 @@ namespace CCToGitlabMgr.Models
 
         private bool _isDone;
         public bool IsDone { get => _isDone; set => SetProperty(ref _isDone, value); }
+
+        public ChecklistItem() { }
 
         public ChecklistItem(string phase, string text)
         {

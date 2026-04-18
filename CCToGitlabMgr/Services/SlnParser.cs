@@ -33,9 +33,14 @@ namespace CCToGitlabMgr.Services
                     info.FormatVersion = fmtMatch.Groups[1].Value;
 
                 // Match: VisualStudioVersion = XX.X.XXXXX.X
-                var vsMatch = Regex.Match(line, @"VisualStudioVersion\s*=\s*(\d+)");
+                var vsMatch = Regex.Match(line, @"^\s*VisualStudioVersion\s*=\s*(\d+)");
                 if (vsMatch.Success)
                     info.VisualStudioVersion = vsMatch.Groups[1].Value;
+
+                // Match: # Visual Studio Version 17
+                var commentVsMatch = Regex.Match(line, @"#\s*Visual Studio Version\s+(\d+)");
+                if (commentVsMatch.Success && string.IsNullOrEmpty(info.VisualStudioVersion))
+                    info.VisualStudioVersion = commentVsMatch.Groups[1].Value;
             }
 
             // Determine VS version from format + VS version header
@@ -107,12 +112,32 @@ namespace CCToGitlabMgr.Services
                 return null;
 
             var slnFiles = Directory.GetFiles(directory, "*.sln", SearchOption.TopDirectoryOnly);
-            if (slnFiles.Length > 0)
+            if (slnFiles.Length == 1)
                 return slnFiles[0];
 
-            // Try one level deep
+            if (slnFiles.Length > 1)
+            {
+                // Prefer a solution whose file name matches the current folder name.
+                var folderName = Path.GetFileName(Path.GetFullPath(directory).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+                var preferred = slnFiles.FirstOrDefault(f =>
+                    Path.GetFileNameWithoutExtension(f).Equals(folderName, System.StringComparison.OrdinalIgnoreCase));
+
+                return preferred ?? slnFiles.OrderBy(f => f).First();
+            }
+
+            // Fall back to subdirectories only when no top-level solution exists.
             slnFiles = Directory.GetFiles(directory, "*.sln", SearchOption.AllDirectories);
-            return slnFiles.Length > 0 ? slnFiles[0] : null;
+            if (slnFiles.Length == 0)
+                return null;
+
+            var rootPath = Path.GetFullPath(directory)
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+
+            return slnFiles
+                .OrderBy(f => f.Count(c => c == Path.DirectorySeparatorChar || c == Path.AltDirectorySeparatorChar))
+                .ThenBy(f => f.StartsWith(rootPath, System.StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+                .ThenBy(f => f)
+                .First();
         }
     }
 }

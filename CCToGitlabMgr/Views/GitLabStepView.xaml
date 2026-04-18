@@ -11,15 +11,33 @@
         <!-- Manual Creation Guide -->
         <Border Style="{StaticResource CardBorder}">
             <StackPanel>
-                <TextBlock Text="Create Project in GitLab" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,12"/>
-                <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,8">
-                    <Run FontWeight="Bold">1.</Run><Run> Log in to GitLab</Run><LineBreak/>
-                    <Run FontWeight="Bold">2.</Run><Run> Click </Run><Run FontWeight="Bold" Foreground="{StaticResource AccentHiBrush}">New project</Run><Run> > </Run><Run FontWeight="Bold" Foreground="{StaticResource AccentHiBrush}">Create blank project</Run><LineBreak/>
-                    <Run FontWeight="Bold">3.</Run><Run> Fill in: Project name, Group, Visibility</Run><LineBreak/>
-                    <Run FontWeight="Bold">4.</Run><Run> </Run><Run Foreground="{StaticResource DangerBrush}" FontWeight="Bold">UNCHECK "Initialize with a README"</Run><LineBreak/>
-                    <Run FontWeight="Bold">5.</Run><Run> Click </Run><Run FontWeight="Bold" Foreground="{StaticResource AccentHiBrush}">Create project</Run><LineBreak/>
-                    <Run FontWeight="Bold">6.</Run><Run> Copy the Clone URL (HTTPS) and paste it below</Run>
-                </TextBlock>
+                <TextBlock Text="Create Project in GitLab" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,16"/>
+                <StackPanel Margin="0,0,0,4">
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" Margin="0,0,0,10">
+                        <Run FontWeight="Bold" Foreground="{StaticResource AccentHiBrush}">1.</Run>
+                        <Run>  Log in to GitLab</Run>
+                    </TextBlock>
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" Margin="0,0,0,10">
+                        <Run FontWeight="Bold" Foreground="{StaticResource AccentHiBrush}">2.</Run>
+                        <Run xml:space="preserve">  Click </Run><Run FontWeight="Bold" Foreground="{StaticResource AccentHiBrush}">New project</Run><Run xml:space="preserve"> > </Run><Run FontWeight="Bold" Foreground="{StaticResource AccentHiBrush}">Create blank project</Run>
+                    </TextBlock>
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" Margin="0,0,0,10">
+                        <Run FontWeight="Bold" Foreground="{StaticResource AccentHiBrush}">3.</Run>
+                        <Run>  Fill in: Project name, Group, Visibility</Run>
+                    </TextBlock>
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" Margin="0,0,0,10">
+                        <Run FontWeight="Bold" Foreground="{StaticResource AccentHiBrush}">4.</Run>
+                        <Run>  </Run><Run Foreground="{StaticResource DangerBrush}" FontWeight="Bold">UNCHECK "Initialize with a README"</Run>
+                    </TextBlock>
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" Margin="0,0,0,10">
+                        <Run FontWeight="Bold" Foreground="{StaticResource AccentHiBrush}">5.</Run>
+                        <Run xml:space="preserve">  Click </Run><Run FontWeight="Bold" Foreground="{StaticResource AccentHiBrush}">Create project</Run>
+                    </TextBlock>
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" Margin="0,0,0,4">
+                        <Run FontWeight="Bold" Foreground="{StaticResource AccentHiBrush}">6.</Run>
+                        <Run>  Copy the Clone URL (HTTPS) and paste it below</Run>
+                    </TextBlock>
+                </StackPanel>
             </StackPanel>
         </Border>
 
@@ -44,14 +62,23 @@
         </Border>
 
         <!-- Danger alert -->
-        <Border Background="#14EF4444" BorderBrush="#4DEF4444" BorderThickness="1" CornerRadius="8" Padding="16,12">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="!" FontWeight="Bold" Foreground="{StaticResource DangerBrush}" FontSize="16" Margin="0,0,12,0" VerticalAlignment="Top"/>
-                <TextBlock TextWrapping="Wrap" Foreground="{StaticResource Text1Brush}" FontSize="13">
-                    <Run FontWeight="Bold" Foreground="{StaticResource Text0Brush}">Do NOT initialize the repo! </Run>
-                    <Run>If GitLab creates an auto-README, the remote won't be empty and push will fail with &quot;rejected (fetch first)&quot;. Always create a completely blank project.</Run>
-                </TextBlock>
-            </StackPanel>
+        <Border Background="#14EF4444" BorderBrush="#4DEF4444" BorderThickness="1" CornerRadius="8" Padding="18,14">
+            <DockPanel>
+                <TextBlock Text="!" FontWeight="Bold" Foreground="{StaticResource DangerBrush}" FontSize="18"
+                           DockPanel.Dock="Left" Margin="0,2,14,0" VerticalAlignment="Top"/>
+                <StackPanel>
+                    <TextBlock Text="Do NOT initialize the repo!" FontWeight="Bold" Foreground="{StaticResource DangerBrush}" FontSize="13" Margin="0,0,0,8"/>
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,5">
+                        <Run>If GitLab creates an auto-README, the remote won't be empty.</Run>
+                    </TextBlock>
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,5">
+                        <Run xml:space="preserve">Push will fail with </Run><Run FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource DangerBrush}">"rejected (fetch first)"</Run><Run>.</Run>
+                    </TextBlock>
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" TextWrapping="Wrap">
+                        <Run FontWeight="SemiBold">Always create a completely blank project</Run><Run xml:space="preserve"> — uncheck all initialization options.</Run>
+                    </TextBlock>
+                </StackPanel>
+            </DockPanel>
         </Border>
     </StackPanel>
 </UserControl>

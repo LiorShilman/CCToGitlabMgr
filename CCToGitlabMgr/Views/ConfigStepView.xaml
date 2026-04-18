@@ -52,14 +52,20 @@
                 Style="{StaticResource AccentButton}" HorizontalAlignment="Left" Margin="0,8,0,0"/>
 
         <!-- Warning -->
-        <Border Background="#14FBBF24" BorderBrush="#4DFBBF24" BorderThickness="1" CornerRadius="8" Padding="16,12" Margin="0,16,0,0">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="!" FontWeight="Bold" Foreground="{StaticResource WarnBrush}" FontSize="16" Margin="0,0,12,0" VerticalAlignment="Top"/>
-                <TextBlock TextWrapping="Wrap" Foreground="{StaticResource Text1Brush}" FontSize="13">
-                    <Run FontWeight="Bold" Foreground="{StaticResource Text0Brush}">core.autocrlf=true </Run>
-                    <Run>is essential for Windows. Without it, Visual Studio will mark all files as &quot;changed&quot; after clone due to line ending differences.</Run>
-                </TextBlock>
-            </StackPanel>
+        <Border Background="#14FBBF24" BorderBrush="#4DFBBF24" BorderThickness="1" CornerRadius="8" Padding="18,14" Margin="0,16,0,0">
+            <DockPanel>
+                <TextBlock Text="!" FontWeight="Bold" Foreground="{StaticResource WarnBrush}" FontSize="18"
+                           DockPanel.Dock="Left" Margin="0,2,14,0" VerticalAlignment="Top"/>
+                <StackPanel>
+                    <TextBlock Text="Why core.autocrlf = true?" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" FontSize="13" Margin="0,0,0,8"/>
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,5">
+                        <Run xml:space="preserve">This setting is </Run><Run FontWeight="SemiBold" Foreground="{StaticResource WarnBrush}">essential</Run><Run xml:space="preserve"> for Windows development.</Run>
+                    </TextBlock>
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" TextWrapping="Wrap">
+                        <Run xml:space="preserve">Without it, Visual Studio will mark </Run><Run FontWeight="SemiBold">all files</Run><Run xml:space="preserve"> as "changed" after clone — due to line ending differences (CRLF vs LF).</Run>
+                    </TextBlock>
+                </StackPanel>
+            </DockPanel>
         </Border>
     </StackPanel>
 </UserControl>

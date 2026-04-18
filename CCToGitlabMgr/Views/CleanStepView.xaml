@@ -37,6 +37,41 @@
             </StackPanel>
         </Border>
 
+        <!-- Preserve Data Directories -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Preserve Data Directories" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,8"/>
+                <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,12"
+                           Text="Scan for subdirectories inside build folders (bin/Debug/Release) that contain runtime data (e.g. Data/, Input/, Configuration/). Checked items will be preserved during cleanup and added as .gitignore exceptions."/>
+                <Button Content="Scan for Data Directories" Command="{Binding ScanPreservableCommand}"
+                        Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,0,0,12"/>
+
+                <!-- List of found directories with checkboxes -->
+                <ItemsControl ItemsSource="{Binding Context.PreservedSubDirs}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="{StaticResource SurfaceBrush}" CornerRadius="6" Padding="10,8" Margin="0,3">
+                                <StackPanel Orientation="Horizontal">
+                                    <CheckBox IsChecked="{Binding IsPreserved}" VerticalAlignment="Center" Margin="0,0,10,0"
+                                              Style="{StaticResource DarkCheckBox}"/>
+                                    <TextBlock VerticalAlignment="Center" Foreground="{StaticResource Text1Brush}" FontSize="13"
+                                               FontFamily="{StaticResource MonoFont}">
+                                        <Run Text="{Binding RelativePath, Mode=OneWay}"/>
+                                    </TextBlock>
+                                    <TextBlock VerticalAlignment="Center" Foreground="{StaticResource Text3Brush}" FontSize="11"
+                                               Margin="12,0,0,0">
+                                        <Run Text="(inside "/>
+                                        <Run Text="{Binding ParentBuildDir, Mode=OneWay}" Foreground="{StaticResource AccentHiBrush}"/>
+                                        <Run Text=")"/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+
         <!-- Build Cleanup -->
         <Border Style="{StaticResource CardBorder}">
             <StackPanel>
@@ -68,14 +103,20 @@
         </Border>
 
         <!-- Warning -->
-        <Border Background="#14FBBF24" BorderBrush="#4DFBBF24" BorderThickness="1" CornerRadius="8" Padding="16,12">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="!" FontWeight="Bold" Foreground="{StaticResource WarnBrush}" FontSize="16" Margin="0,0,12,0" VerticalAlignment="Top"/>
-                <TextBlock TextWrapping="Wrap" Foreground="{StaticResource Text1Brush}" FontSize="13">
-                    <Run FontWeight="Bold" Foreground="{StaticResource Text0Brush}">Caution with Debug/Release folders: </Run>
-                    <Run>If your project has source folders named Debug or Release (rare), check the scan output before cleaning.</Run>
-                </TextBlock>
-            </StackPanel>
+        <Border Background="#14FBBF24" BorderBrush="#4DFBBF24" BorderThickness="1" CornerRadius="8" Padding="18,14">
+            <DockPanel>
+                <TextBlock Text="!" FontWeight="Bold" Foreground="{StaticResource WarnBrush}" FontSize="18"
+                           DockPanel.Dock="Left" Margin="0,2,14,0" VerticalAlignment="Top"/>
+                <StackPanel>
+                    <TextBlock Text="Caution with Debug / Release folders" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" FontSize="13" Margin="0,0,0,8"/>
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,5">
+                        <Run>Some projects have source folders named</Run><Run xml:space="preserve"> </Run><Run FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource AccentHiBrush}">Debug</Run><Run xml:space="preserve"> or </Run><Run FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource AccentHiBrush}">Release</Run><Run xml:space="preserve"> (rare but possible).</Run>
+                    </TextBlock>
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" TextWrapping="Wrap">
+                        <Run>Always check the scan output before cleaning to make sure no source files will be deleted.</Run>
+                    </TextBlock>
+                </StackPanel>
+            </DockPanel>
         </Border>
     </StackPanel>
 </UserControl>

@@ -78,6 +78,57 @@ namespace CCToGitlabMgr.Services
         }
 
         /// <summary>
+        /// Scan for data subdirectories inside build output folders (bin/Debug/Release/obj).
+        /// These are folders that may contain runtime input data the user wants to preserve.
+        /// </summary>
+        public List<Models.PreservedSubDir> ScanPreservableDirs(string rootPath)
+        {
+            var results = new List<Models.PreservedSubDir>();
+            if (!Directory.Exists(rootPath)) return results;
+
+            // Folders whose direct children we want to surface
+            var buildDirNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                { "bin", "obj", "Debug", "Release", "x64", "x86" };
+
+            try
+            {
+                foreach (var dir in Directory.EnumerateDirectories(rootPath, "*", SearchOption.AllDirectories))
+                {
+                    var dirName = Path.GetFileName(dir);
+                    if (!buildDirNames.Contains(dirName)) continue;
+
+                    // Look at immediate children of this build dir
+                    try
+                    {
+                        foreach (var child in Directory.EnumerateDirectories(dir))
+                        {
+                            var childName = Path.GetFileName(child);
+                            // Skip well-known build sub-folders
+                            if (buildDirNames.Contains(childName)) continue;
+                            if (string.Equals(childName, "net472", StringComparison.OrdinalIgnoreCase)) continue;
+                            if (string.Equals(childName, "ref", StringComparison.OrdinalIgnoreCase)) continue;
+                            if (string.Equals(childName, "app.publish", StringComparison.OrdinalIgnoreCase)) continue;
+
+                            var relativePath = GetRelativePath(rootPath, child);
+                            results.Add(new Models.PreservedSubDir
+                            {
+                                FullPath = child,
+                                RelativePath = relativePath,
+                                ParentBuildDir = dirName,
+                                Name = childName,
+                                IsPreserved = true
+                            });
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+
+            return results;
+        }
+
+        /// <summary>
         /// Scan for build artifacts without deleting
         /// </summary>
         public List<string> ScanBuildArtifacts(string rootPath)
@@ -109,16 +160,20 @@ namespace CCToGitlabMgr.Services
         }
 
         /// <summary>
-        /// Remove build artifacts
+        /// Remove build artifacts, preserving specified subdirectories
         /// </summary>
-        public async Task<CleanupResult> CleanBuildArtifactsAsync(string rootPath, CancellationToken ct = default)
+        public async Task<CleanupResult> CleanBuildArtifactsAsync(string rootPath, IEnumerable<string> preservePaths = null, CancellationToken ct = default)
         {
+            var preserveSet = preservePaths != null
+                ? new HashSet<string>(preservePaths, StringComparer.OrdinalIgnoreCase)
+                : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
             return await Task.Run(() =>
             {
                 var result = new CleanupResult();
                 Progress?.Invoke("Scanning for build artifacts...");
 
-                RemoveDirectories(rootPath, BuildDirs, result, ct);
+                RemoveDirectoriesWithPreserve(rootPath, BuildDirs, preserveSet, result, ct);
                 RemoveFiles(rootPath, BuildFilePatterns, result, ct);
 
                 Progress?.Invoke($"Build cleanup complete: {result.FilesRemoved} files, {result.DirectoriesRemoved} directories removed.");
@@ -223,6 +278,92 @@ namespace CCToGitlabMgr.Services
                 }
                 catch { }
             }
+        }
+
+        /// <summary>
+        /// Remove directories but first move preserved subdirectories to a temp location,
+        /// delete the build dir, then restore the preserved dirs.
+        /// </summary>
+        private void RemoveDirectoriesWithPreserve(string root, string[] dirNames, HashSet<string> preservePaths, CleanupResult result, CancellationToken ct)
+        {
+            if (preservePaths.Count == 0)
+            {
+                RemoveDirectories(root, dirNames, result, ct);
+                return;
+            }
+
+            try
+            {
+                foreach (var dir in Directory.EnumerateDirectories(root, "*", SearchOption.AllDirectories).ToList())
+                {
+                    ct.ThrowIfCancellationRequested();
+                    var name = Path.GetFileName(dir);
+                    if (!dirNames.Any(d => string.Equals(d, name, StringComparison.OrdinalIgnoreCase)))
+                        continue;
+                    if (!Directory.Exists(dir)) continue;
+
+                    // Find preserved children of this dir
+                    var toPreserve = new List<string>();
+                    foreach (var pPath in preservePaths)
+                    {
+                        var fullPreserve = Path.Combine(root, pPath);
+                        if (fullPreserve.StartsWith(dir + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+                            || fullPreserve.StartsWith(dir + Path.AltDirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (Directory.Exists(fullPreserve))
+                                toPreserve.Add(fullPreserve);
+                        }
+                    }
+
+                    // Move preserved dirs to temp
+                    var tempMoves = new List<(string orig, string temp)>();
+                    foreach (var pDir in toPreserve)
+                    {
+                        var tempDir = pDir + "_PRESERVE_TMP_" + Guid.NewGuid().ToString("N").Substring(0, 8);
+                        try
+                        {
+                            Directory.Move(pDir, tempDir);
+                            tempMoves.Add((pDir, tempDir));
+                            Progress?.Invoke($"  Preserving: {GetRelativePath(root, pDir)}");
+                        }
+                        catch (Exception ex)
+                        {
+                            Progress?.Invoke($"  Warning: Could not preserve {GetRelativePath(root, pDir)}: {ex.Message}");
+                        }
+                    }
+
+                    try
+                    {
+                        var size = GetDirectorySize(dir);
+                        Directory.Delete(dir, true);
+                        result.DirectoriesRemoved++;
+                        result.BytesFreed += size;
+                        result.RemovedItems.Add(dir);
+                        Progress?.Invoke($"  Removed directory: {GetRelativePath(root, dir)}");
+                    }
+                    catch (Exception ex)
+                    {
+                        result.Errors.Add($"{dir}: {ex.Message}");
+                    }
+
+                    // Restore preserved dirs
+                    foreach (var (orig, temp) in tempMoves)
+                    {
+                        try
+                        {
+                            Directory.CreateDirectory(Path.GetDirectoryName(orig));
+                            Directory.Move(temp, orig);
+                            Progress?.Invoke($"  Restored: {GetRelativePath(root, orig)}");
+                        }
+                        catch (Exception ex)
+                        {
+                            Progress?.Invoke($"  ERROR restoring {GetRelativePath(root, orig)}: {ex.Message}");
+                            result.Errors.Add($"Restore failed {orig}: {ex.Message}");
+                        }
+                    }
+                }
+            }
+            catch { }
         }
 
         private void RemoveDirectories(string root, string[] dirNames, CleanupResult result, CancellationToken ct)

@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -61,9 +63,86 @@ namespace CCToGitlabMgr.ViewModels
         private string _gitVersion;
         public string GitVersion { get => _gitVersion; set => SetProperty(ref _gitVersion, value); }
 
+        // === Project Management ===
+        private string _currentProjectId;
+        public string CurrentProjectId { get => _currentProjectId; set => SetProperty(ref _currentProjectId, value); }
+
+        private string _currentProjectName = "Untitled Project";
+        public string CurrentProjectName { get => _currentProjectName; set { SetProperty(ref _currentProjectName, value); OnPropertyChanged(nameof(WindowTitle)); } }
+
+        private bool _isDirty;
+        public bool IsDirty { get => _isDirty; set { SetProperty(ref _isDirty, value); OnPropertyChanged(nameof(WindowTitle)); } }
+
+        public string WindowTitle => IsDirty
+            ? $"{CurrentProjectName}* — ClearCase -> GitLab"
+            : $"{CurrentProjectName} — ClearCase -> GitLab";
+
+        private ObservableCollection<ProjectInfo> _savedProjects = new ObservableCollection<ProjectInfo>();
+        public ObservableCollection<ProjectInfo> SavedProjects { get => _savedProjects; set => SetProperty(ref _savedProjects, value); }
+
         // === Output Console ===
         private string _consoleOutput = "";
         public string ConsoleOutput { get => _consoleOutput; set => SetProperty(ref _consoleOutput, value); }
+
+        // === README ===
+        private string _readmeContent = "";
+        public string ReadmeContent { get => _readmeContent; set => SetProperty(ref _readmeContent, value); }
+
+        // === Tags ===
+        private string _tagName = "v1.0.0";
+        public string TagName { get => _tagName; set => SetProperty(ref _tagName, value); }
+
+        private string _tagMessage = "";
+        public string TagMessage { get => _tagMessage; set => SetProperty(ref _tagMessage, value); }
+
+        // === Daily Workflow ===
+        private string _dailyWorkingPath = "";
+        public string DailyWorkingPath
+        {
+            get => _dailyWorkingPath;
+            set
+            {
+                if (SetProperty(ref _dailyWorkingPath, value))
+                {
+                    OnPropertyChanged(nameof(DailyWorkingDirStatus));
+                    OnPropertyChanged(nameof(DailyWorkingDirIsReady));
+                }
+            }
+        }
+
+        public string DailyWorkingDirStatus
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(DailyWorkingPath))
+                    return "Not set — choose a working directory or clone from GitLab";
+                if (!Directory.Exists(DailyWorkingPath))
+                    return "Directory does not exist";
+                if (!Directory.Exists(Path.Combine(DailyWorkingPath, ".git")))
+                    return "Not a Git repository — use Clone to set it up";
+                return "Ready";
+            }
+        }
+
+        public bool DailyWorkingDirIsReady
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(DailyWorkingPath)) return false;
+                if (!Directory.Exists(DailyWorkingPath)) return false;
+                if (!Directory.Exists(Path.Combine(DailyWorkingPath, ".git"))) return false;
+                return true;
+            }
+        }
+
+        private string _dailyCommitMessage = "";
+        public string DailyCommitMessage { get => _dailyCommitMessage; set => SetProperty(ref _dailyCommitMessage, value); }
+
+        private string _newBranchName = "";
+        public string NewBranchName { get => _newBranchName; set => SetProperty(ref _newBranchName, value); }
+
+        private string _stashMessage = "";
+        public string StashMessage { get => _stashMessage; set => SetProperty(ref _stashMessage, value); }
 
         // === Steps ===
         public ObservableCollection<StepInfo> Steps { get; } = new ObservableCollection<StepInfo>();
@@ -85,6 +164,8 @@ namespace CCToGitlabMgr.ViewModels
         public AsyncRelayCommand CleanClearCaseCommand { get; private set; }
         public AsyncRelayCommand CleanBuildCommand { get; private set; }
         public AsyncRelayCommand AuditFilesCommand { get; private set; }
+        // Step 3 - Preserve
+        public AsyncRelayCommand ScanPreservableCommand { get; private set; }
         // Step 4
         public AsyncRelayCommand PlaceGitignoreCommand { get; private set; }
         public AsyncRelayCommand PreviewGitignoreCommand { get; private set; }
@@ -94,6 +175,37 @@ namespace CCToGitlabMgr.ViewModels
         // Step 7
         public AsyncRelayCommand RunVerifyCommand { get; private set; }
         public AsyncRelayCommand BrowseVerifyCommand { get; private set; }
+        public RelayCommand GenerateReadmeCommand { get; private set; }
+        public RelayCommand SaveReadmeCommand { get; private set; }
+        public RelayCommand LoadReadmeFileCommand { get; private set; }
+
+        // Tags
+        public AsyncRelayCommand CreateTagCommand { get; private set; }
+        public AsyncRelayCommand ListTagsCommand { get; private set; }
+        public AsyncRelayCommand PushTagsCommand { get; private set; }
+
+        // Daily Workflow - Setup
+        public AsyncRelayCommand BrowseDailyWorkingCommand { get; private set; }
+        public AsyncRelayCommand CloneToDailyCommand { get; private set; }
+        // Daily Workflow - Operations
+        public AsyncRelayCommand DailyPullCommand { get; private set; }
+        public AsyncRelayCommand DailyPushCommand { get; private set; }
+        public AsyncRelayCommand DailyStatusCommand { get; private set; }
+        public AsyncRelayCommand DailyDiffCommand { get; private set; }
+        public AsyncRelayCommand DailyLogCommand { get; private set; }
+        public AsyncRelayCommand DailyCommitCommand { get; private set; }
+        public AsyncRelayCommand DailyCommitPushCommand { get; private set; }
+        public AsyncRelayCommand DailyCreateBranchCommand { get; private set; }
+        public AsyncRelayCommand DailyListBranchesCommand { get; private set; }
+        public AsyncRelayCommand DailySwitchMainCommand { get; private set; }
+        public AsyncRelayCommand DailyStashCommand { get; private set; }
+        public AsyncRelayCommand DailyStashPopCommand { get; private set; }
+
+        // Project management
+        public RelayCommand NewProjectCommand { get; private set; }
+        public RelayCommand SaveProjectCommand { get; private set; }
+        public RelayCommand LoadProjectCommand { get; private set; }
+        public RelayCommand DeleteProjectCommand { get; private set; }
 
         private CancellationTokenSource _cts;
 
@@ -109,7 +221,11 @@ namespace CCToGitlabMgr.ViewModels
 
             InitializeSteps();
             InitializeCommands();
+            RefreshProjectList();
             _ = CheckGitAsync();
+
+            // Dirty tracking
+            Context.PropertyChanged += (s, e) => { IsDirty = true; };
         }
 
         private void InitializeSteps()
@@ -122,13 +238,18 @@ namespace CCToGitlabMgr.ViewModels
             Steps.Add(new StepInfo { Number = 6, Title = "Migrate", Icon = "!" });
             Steps.Add(new StepInfo { Number = 7, Title = "Verify", Icon = "?" });
             Steps.Add(new StepInfo { Number = 8, Title = "Checklist", Icon = "#" });
+            Steps.Add(new StepInfo { Number = 9, Title = "Daily Work", Icon = ">" });
         }
 
         private void InitializeCommands()
         {
             NextStepCommand = new RelayCommand(() =>
             {
-                if (CanGoForward) CurrentStepIndex++;
+                if (CanGoForward)
+                {
+                    AutoCompleteCurrentStep();
+                    CurrentStepIndex++;
+                }
             }, () => CanGoForward && !IsBusy);
 
             PrevStepCommand = new RelayCommand(() =>
@@ -160,6 +281,7 @@ namespace CCToGitlabMgr.ViewModels
             CleanClearCaseCommand = new AsyncRelayCommand(CleanClearCaseAsync, () => !IsBusy);
             CleanBuildCommand = new AsyncRelayCommand(CleanBuildAsync, () => !IsBusy);
             AuditFilesCommand = new AsyncRelayCommand(AuditFilesAsync, () => !IsBusy);
+            ScanPreservableCommand = new AsyncRelayCommand(ScanPreservableAsync, () => !IsBusy);
 
             // Step 4
             PlaceGitignoreCommand = new AsyncRelayCommand(PlaceGitignoreAsync, () => !IsBusy);
@@ -179,6 +301,71 @@ namespace CCToGitlabMgr.ViewModels
             // Step 7
             RunVerifyCommand = new AsyncRelayCommand(RunVerifyAsync, () => !IsBusy);
             BrowseVerifyCommand = new AsyncRelayCommand(() => { BrowseFolder(p => Context.VerifyPath = p); return Task.CompletedTask; });
+            GenerateReadmeCommand = new RelayCommand(GenerateReadme);
+            SaveReadmeCommand = new RelayCommand(SaveReadme);
+            LoadReadmeFileCommand = new RelayCommand(LoadReadmeFile);
+
+            // Tags
+            CreateTagCommand = new AsyncRelayCommand(CreateTagAsync, () => !IsBusy);
+            ListTagsCommand = new AsyncRelayCommand(ListTagsAsync, () => !IsBusy);
+            PushTagsCommand = new AsyncRelayCommand(PushTagsAsync, () => !IsBusy);
+
+            // Daily Workflow - Setup
+            BrowseDailyWorkingCommand = new AsyncRelayCommand(() => { BrowseFolder(p => DailyWorkingPath = p); return Task.CompletedTask; });
+            CloneToDailyCommand = new AsyncRelayCommand(CloneToDailyAsync, () => !IsBusy);
+            // Daily Workflow - Operations
+            DailyPullCommand = new AsyncRelayCommand(DailyPullAsync, () => !IsBusy);
+            DailyPushCommand = new AsyncRelayCommand(DailyPushAsync, () => !IsBusy);
+            DailyStatusCommand = new AsyncRelayCommand(DailyStatusAsync, () => !IsBusy);
+            DailyDiffCommand = new AsyncRelayCommand(DailyDiffAsync, () => !IsBusy);
+            DailyLogCommand = new AsyncRelayCommand(DailyLogAsync, () => !IsBusy);
+            DailyCommitCommand = new AsyncRelayCommand(DailyCommitAsync, () => !IsBusy);
+            DailyCommitPushCommand = new AsyncRelayCommand(DailyCommitPushAsync, () => !IsBusy);
+            DailyCreateBranchCommand = new AsyncRelayCommand(DailyCreateBranchAsync, () => !IsBusy);
+            DailyListBranchesCommand = new AsyncRelayCommand(DailyListBranchesAsync, () => !IsBusy);
+            DailySwitchMainCommand = new AsyncRelayCommand(DailySwitchMainAsync, () => !IsBusy);
+            DailyStashCommand = new AsyncRelayCommand(DailyStashAsync, () => !IsBusy);
+            DailyStashPopCommand = new AsyncRelayCommand(DailyStashPopAsync, () => !IsBusy);
+
+            // Project management
+            NewProjectCommand = new RelayCommand(NewProject);
+            SaveProjectCommand = new RelayCommand(SaveProject);
+            LoadProjectCommand = new RelayCommand(p =>
+            {
+                if (p is string projectId)
+                    LoadProject(projectId);
+            });
+            DeleteProjectCommand = new RelayCommand(p =>
+            {
+                if (p is string projectId)
+                    DeleteProject(projectId);
+            });
+        }
+
+        /// <summary>
+        /// Mark manual steps as completed when navigating away, if their required data is filled.
+        /// </summary>
+        private void AutoCompleteCurrentStep()
+        {
+            var step = CurrentStep;
+            if (step == null || step.Status == "Completed") return;
+
+            switch (_currentStepIndex)
+            {
+                case 0: // Git Config — complete if name+email filled
+                    if (!string.IsNullOrWhiteSpace(Context.UserName) && !string.IsNullOrWhiteSpace(Context.UserEmail))
+                        step.Status = "Completed";
+                    break;
+                case 4: // GitLab — complete if remote URL filled
+                    if (!string.IsNullOrWhiteSpace(Context.RemoteUrl))
+                        step.Status = "Completed";
+                    break;
+                case 7: // Checklist — complete if all items checked
+                    if (Context.ChecklistItems != null && Context.ChecklistItems.Count > 0 &&
+                        Context.ChecklistItems.All(c => c.IsDone))
+                        step.Status = "Completed";
+                    break;
+            }
         }
 
         // === Command Implementations ===
@@ -250,11 +437,13 @@ namespace CCToGitlabMgr.ViewModels
                 if (slnPath != null)
                 {
                     Context.SlnFilePath = slnPath;
+                    AppendOutput($"Parsing solution: {slnPath}");
                     var info = SlnParser.Parse(slnPath);
                     if (info != null)
                     {
                         Context.VsVersion = info.DetectedVS;
                         Context.GitignoreTemplate = info.RecommendedGitignore;
+                        AppendOutput($"VisualStudioVersion header: {info.VisualStudioVersion ?? "n/a"}");
                         AppendOutput($"Detected: Visual Studio {info.DetectedVS} (Format {info.FormatVersion})");
                         AppendOutput($"Recommended gitignore: {info.RecommendedGitignore}");
                     }
@@ -341,6 +530,42 @@ namespace CCToGitlabMgr.ViewModels
             finally { IsBusy = false; }
         }
 
+        private async Task ScanPreservableAsync()
+        {
+            var path = Context.StagingPath;
+            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
+            {
+                AppendOutput("ERROR: Staging path is invalid. Complete Step 2 first.");
+                return;
+            }
+
+            IsBusy = true;
+            BusyMessage = "Scanning for preservable subdirectories...";
+
+            try
+            {
+                var items = await Task.Run(() => Cleanup.ScanPreservableDirs(path));
+
+                Context.PreservedSubDirs.Clear();
+                foreach (var item in items)
+                    Context.PreservedSubDirs.Add(item);
+
+                if (items.Count == 0)
+                {
+                    AppendOutput("No data subdirectories found inside build output folders.");
+                }
+                else
+                {
+                    AppendOutput($"Found {items.Count} subdirectories inside build folders:");
+                    foreach (var item in items)
+                        AppendOutput($"  [{item.ParentBuildDir}] {item.RelativePath}");
+                    AppendOutput("Check the ones you want to KEEP. They will be preserved during cleanup and added as .gitignore exceptions.");
+                }
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
         private async Task CleanBuildAsync()
         {
             var path = Context.StagingPath;
@@ -356,7 +581,17 @@ namespace CCToGitlabMgr.ViewModels
 
             try
             {
-                var result = await Cleanup.CleanBuildArtifactsAsync(path, _cts.Token);
+                // Collect preserved relative paths
+                var preservePaths = new System.Collections.Generic.List<string>();
+                foreach (var item in Context.PreservedSubDirs)
+                {
+                    if (item.IsPreserved)
+                        preservePaths.Add(item.RelativePath);
+                }
+                if (preservePaths.Count > 0)
+                    AppendOutput($"Preserving {preservePaths.Count} subdirectories...");
+
+                var result = await Cleanup.CleanBuildArtifactsAsync(path, preservePaths, _cts.Token);
                 Context.BuildArtifactsRemoved = result.FilesRemoved + result.DirectoriesRemoved;
 
                 var sizeAfter = FileCleanupService.GetDirectorySize(path);
@@ -435,6 +670,30 @@ namespace CCToGitlabMgr.ViewModels
                     AppendOutput("Angular/Web rules appended.");
                 }
 
+                // Append preserve exceptions for data subdirectories
+                var preservedItems = new System.Collections.Generic.List<Models.PreservedSubDir>();
+                foreach (var item in Context.PreservedSubDirs)
+                {
+                    if (item.IsPreserved)
+                        preservedItems.Add(item);
+                }
+
+                if (preservedItems.Count > 0)
+                {
+                    var sb = new System.Text.StringBuilder();
+                    sb.AppendLine();
+                    sb.AppendLine("# Preserved data directories inside build output");
+                    foreach (var item in preservedItems)
+                    {
+                        // Convert backslashes to forward slashes for gitignore
+                        var gitPath = item.RelativePath.Replace('\\', '/');
+                        sb.AppendLine($"!{gitPath}/");
+                        sb.AppendLine($"!{gitPath}/**");
+                    }
+                    File.AppendAllText(gitignorePath, sb.ToString());
+                    AppendOutput($"Added {preservedItems.Count} preserve exceptions to .gitignore.");
+                }
+
                 Steps[3].Status = "Completed";
             }
             catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
@@ -457,12 +716,17 @@ namespace CCToGitlabMgr.ViewModels
 
             try
             {
-                // Init repo temporarily if needed
                 var gitDir = Path.Combine(path, ".git");
-                bool wasInit = Directory.Exists(gitDir);
+                bool hadGit = Directory.Exists(gitDir);
 
-                if (!wasInit)
-                    await Git.InitAsync(path, _cts.Token);
+                // Always start fresh for an accurate dry run
+                if (hadGit)
+                {
+                    AppendOutput("Removing existing .git for a clean dry run...");
+                    ForceDeleteDirectory(gitDir);
+                }
+
+                await Git.InitAsync(path, _cts.Token);
 
                 var countResult = await Git.CountFilesAsync(path, _cts.Token);
                 if (countResult.Success)
@@ -485,12 +749,21 @@ namespace CCToGitlabMgr.ViewModels
                 {
                     var ignored = ignoredResult.Output.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
                     AppendOutput($"\nIgnored files: {ignored.Length}");
+                    if (ignored.Length > 0)
+                    {
+                        AppendOutput("--- First 30 ignored ---");
+                        for (int i = 0; i < Math.Min(30, ignored.Length); i++)
+                            AppendOutput($"  {ignored[i]}");
+                        if (ignored.Length > 30)
+                            AppendOutput($"  ... and {ignored.Length - 30} more");
+                    }
                 }
 
-                // Clean up if we created .git
-                if (!wasInit && Directory.Exists(gitDir))
+                // Clean up — dry run only, don't leave .git behind
+                if (Directory.Exists(gitDir))
                 {
-                    try { Directory.Delete(gitDir, true); } catch { }
+                    try { ForceDeleteDirectory(gitDir); } catch { }
+                    AppendOutput("Dry run complete — .git removed.");
                 }
             }
             catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
@@ -585,6 +858,711 @@ namespace CCToGitlabMgr.ViewModels
             finally { IsBusy = false; }
         }
 
+        // === Tags ===
+
+        private async Task CreateTagAsync()
+        {
+            var path = Context.StagingPath;
+            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(Path.Combine(path, ".git")))
+            {
+                AppendOutput("ERROR: No git repository found. Run migration first.");
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(TagName))
+            {
+                AppendOutput("ERROR: Tag name is empty.");
+                return;
+            }
+
+            IsBusy = true;
+            BusyMessage = "Creating tag...";
+            _cts = new CancellationTokenSource();
+
+            try
+            {
+                var message = string.IsNullOrWhiteSpace(TagMessage)
+                    ? $"Release {TagName} — migrated from ClearCase"
+                    : TagMessage;
+
+                var result = await Git.CreateTagAsync(path, TagName, message, _cts.Token);
+                if (result.Success)
+                    AppendOutput($"Tag '{TagName}' created successfully.");
+                else
+                    AppendOutput($"Failed to create tag: {result.Error}");
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        private async Task ListTagsAsync()
+        {
+            var path = Context.StagingPath;
+            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(Path.Combine(path, ".git")))
+            {
+                AppendOutput("ERROR: No git repository found.");
+                return;
+            }
+
+            IsBusy = true;
+            BusyMessage = "Loading tags...";
+            _cts = new CancellationTokenSource();
+
+            try
+            {
+                var result = await Git.ListTagsWithMessagesAsync(path, _cts.Token);
+                if (result.Success)
+                {
+                    IsBusy = false;
+                    Views.StyledDialog.ShowTagsViewer(result.Output ?? "");
+                    return;
+                }
+                else
+                {
+                    AppendOutput($"Failed to list tags: {result.Error}");
+                }
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        private async Task PushTagsAsync()
+        {
+            var path = Context.StagingPath;
+            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(Path.Combine(path, ".git")))
+            {
+                AppendOutput("ERROR: No git repository found.");
+                return;
+            }
+
+            IsBusy = true;
+            BusyMessage = "Pushing tags to GitLab...";
+            _cts = new CancellationTokenSource();
+
+            try
+            {
+                var result = await Git.PushAllTagsAsync(path, "origin", _cts.Token);
+                if (result.Success)
+                    AppendOutput("All tags pushed to GitLab.");
+                else
+                    AppendOutput($"Push failed: {result.Error}");
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        // === README Generation ===
+
+        private string BuildReadmeContent()
+        {
+            var sb = new System.Text.StringBuilder();
+            var projectName = string.IsNullOrWhiteSpace(Context.ProjectName) ? "Project" : Context.ProjectName;
+            var date = DateTime.Now.ToString("yyyy-MM-dd");
+
+            sb.AppendLine($"# {projectName}");
+            sb.AppendLine();
+
+            // Description
+            sb.AppendLine("## Description");
+            sb.AppendLine();
+            sb.AppendLine($"This project was migrated from **IBM ClearCase** to **GitLab** on {date}.");
+            sb.AppendLine();
+
+            // Quick Start
+            sb.AppendLine("## Quick Start");
+            sb.AppendLine();
+            sb.AppendLine("```bash");
+            if (!string.IsNullOrWhiteSpace(Context.RemoteUrl))
+                sb.AppendLine($"git clone {Context.RemoteUrl}");
+            else
+                sb.AppendLine("git clone <project-url>");
+            sb.AppendLine($"cd {projectName}");
+            sb.AppendLine("```");
+            sb.AppendLine();
+
+            // Build Instructions
+            sb.AppendLine("## Build Instructions");
+            sb.AppendLine();
+            if (!string.IsNullOrWhiteSpace(Context.VsVersion))
+            {
+                sb.AppendLine($"- **IDE:** Visual Studio {Context.VsVersion}");
+            }
+            sb.AppendLine($"- **Framework:** .NET Framework (see solution file for details)");
+            if (!string.IsNullOrWhiteSpace(Context.SlnFilePath))
+            {
+                var slnName = Path.GetFileName(Context.SlnFilePath);
+                sb.AppendLine($"- **Solution File:** `{slnName}`");
+            }
+            sb.AppendLine();
+            sb.AppendLine("### Steps");
+            sb.AppendLine();
+            sb.AppendLine("1. Open the `.sln` file in Visual Studio");
+            sb.AppendLine("2. Allow NuGet package restore if prompted");
+            sb.AppendLine("3. **Build** > **Rebuild Solution**");
+            sb.AppendLine("4. Verify: 0 errors");
+            sb.AppendLine("5. Press **F5** to run");
+            sb.AppendLine();
+
+            // Project Structure
+            sb.AppendLine("## Project Structure");
+            sb.AppendLine();
+            sb.AppendLine("```");
+            sb.AppendLine($"{projectName}/");
+            sb.AppendLine("  |-- .gitignore");
+            if (!string.IsNullOrWhiteSpace(Context.SlnFilePath))
+                sb.AppendLine($"  |-- {Path.GetFileName(Context.SlnFilePath)}");
+            sb.AppendLine("  |-- README.md");
+            sb.AppendLine("  |-- ...");
+            sb.AppendLine("```");
+            sb.AppendLine();
+
+            // Git Workflow
+            sb.AppendLine("## Git Workflow");
+            sb.AppendLine();
+            sb.AppendLine("### Daily workflow");
+            sb.AppendLine();
+            sb.AppendLine("```bash");
+            sb.AppendLine("# Get latest changes");
+            sb.AppendLine("git pull");
+            sb.AppendLine();
+            sb.AppendLine("# Make changes, then stage and commit");
+            sb.AppendLine("git add .");
+            sb.AppendLine("git commit -m \"Brief description of changes\"");
+            sb.AppendLine();
+            sb.AppendLine("# Push to GitLab");
+            sb.AppendLine("git push");
+            sb.AppendLine("```");
+            sb.AppendLine();
+            sb.AppendLine("### Working with branches");
+            sb.AppendLine();
+            sb.AppendLine("```bash");
+            sb.AppendLine("# Create a feature branch");
+            sb.AppendLine("git checkout -b feature/my-feature");
+            sb.AppendLine();
+            sb.AppendLine("# ... make changes, commit ...");
+            sb.AppendLine();
+            sb.AppendLine("# Push branch and create merge request");
+            sb.AppendLine("git push -u origin feature/my-feature");
+            sb.AppendLine("```");
+            sb.AppendLine();
+
+            // Migration Info
+            sb.AppendLine("## Migration Info");
+            sb.AppendLine();
+            sb.AppendLine("| Detail | Value |");
+            sb.AppendLine("|--------|-------|");
+            sb.AppendLine($"| Migration Date | {date} |");
+            sb.AppendLine($"| Source | IBM ClearCase |");
+            sb.AppendLine($"| Target | GitLab |");
+            if (!string.IsNullOrWhiteSpace(Context.VsVersion))
+                sb.AppendLine($"| Visual Studio | {Context.VsVersion} |");
+            sb.AppendLine($"| Gitignore Template | {Context.GitignoreTemplate} |");
+            if (!string.IsNullOrWhiteSpace(Context.DefaultBranch))
+                sb.AppendLine($"| Default Branch | {Context.DefaultBranch} |");
+            sb.AppendLine();
+
+            // Important Notes
+            sb.AppendLine("## Important Notes");
+            sb.AppendLine();
+            sb.AppendLine("- **Do NOT commit** `bin/`, `obj/`, or build outputs — they are in `.gitignore`");
+            sb.AppendLine("- **Do NOT commit** personal settings files (`*.user`, `*.suo`)");
+            sb.AppendLine("- If build fails after clone, check that all NuGet packages restore correctly");
+            sb.AppendLine("- For any external DLL dependencies, see the `libs/` folder (if present)");
+            sb.AppendLine();
+
+            return sb.ToString();
+        }
+
+        private void GenerateReadme()
+        {
+            ReadmeContent = BuildReadmeContent();
+            AppendOutput("README content generated. Edit as needed, then click Save.");
+        }
+
+        private void LoadReadmeFile()
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Markdown|*.md|Text files|*.txt|All files|*.*",
+                Title = "Load README file"
+            };
+            if (dialog.ShowDialog() == true)
+            {
+                try
+                {
+                    ReadmeContent = File.ReadAllText(dialog.FileName, System.Text.Encoding.UTF8);
+                    AppendOutput($"Loaded: {dialog.FileName}");
+                }
+                catch (Exception ex)
+                {
+                    AppendOutput($"ERROR: {ex.Message}");
+                }
+            }
+        }
+
+        private void SaveReadme()
+        {
+            var path = Context.StagingPath;
+            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
+            {
+                AppendOutput("ERROR: Staging path is invalid.");
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(ReadmeContent))
+            {
+                AppendOutput("ERROR: README content is empty. Generate or load first.");
+                return;
+            }
+
+            try
+            {
+                var readmePath = Path.Combine(path, "README.md");
+                File.WriteAllText(readmePath, ReadmeContent, System.Text.Encoding.UTF8);
+                AppendOutput($"README.md saved at: {readmePath}");
+            }
+            catch (Exception ex)
+            {
+                AppendOutput($"ERROR: {ex.Message}");
+            }
+        }
+
+        // === Daily Workflow ===
+
+        private string GetDailyWorkingDir()
+        {
+            var path = DailyWorkingPath;
+            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
+                return null;
+            if (!Directory.Exists(Path.Combine(path, ".git")))
+                return null;
+            return path;
+        }
+
+        private async Task CloneToDailyAsync()
+        {
+            if (string.IsNullOrWhiteSpace(Context.RemoteUrl))
+            {
+                AppendOutput("ERROR: Remote URL is empty. Complete Step 5 (GitLab) first.");
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(DailyWorkingPath))
+            {
+                AppendOutput("ERROR: Working directory is not set. Browse to a folder first.");
+                return;
+            }
+
+            // If the directory already has .git, don't clone over it
+            if (Directory.Exists(Path.Combine(DailyWorkingPath, ".git")))
+            {
+                AppendOutput("This folder is already a Git repository. Ready to use.");
+                OnPropertyChanged(nameof(DailyWorkingDirStatus));
+                OnPropertyChanged(nameof(DailyWorkingDirIsReady));
+                return;
+            }
+
+            IsBusy = true;
+            BusyMessage = "Cloning from GitLab...";
+            _cts = new CancellationTokenSource();
+
+            try
+            {
+                // Clone into the selected path
+                // If directory exists but is empty, clone directly. Otherwise clone into a subfolder.
+                string targetDir;
+                if (Directory.Exists(DailyWorkingPath) && Directory.GetFileSystemEntries(DailyWorkingPath).Length > 0)
+                {
+                    // Not empty — clone into a subfolder with the project name
+                    var folderName = Context.ProjectName ?? Path.GetFileNameWithoutExtension(Context.RemoteUrl.TrimEnd('/'));
+                    targetDir = Path.Combine(DailyWorkingPath, folderName);
+                }
+                else
+                {
+                    targetDir = DailyWorkingPath;
+                }
+
+                var result = await Git.CloneAsync(Context.RemoteUrl, targetDir, _cts.Token);
+                if (result.Success)
+                {
+                    _dailyWorkingPath = targetDir;
+                    OnPropertyChanged(nameof(DailyWorkingPath));
+                    OnPropertyChanged(nameof(DailyWorkingDirStatus));
+                    OnPropertyChanged(nameof(DailyWorkingDirIsReady));
+                    AppendOutput($"Clone successful to: {targetDir}");
+                    await Git.LogAsync(targetDir, 5, _cts.Token);
+                }
+                else
+                {
+                    AppendOutput($"Clone failed: {result.Error}");
+                }
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        private async Task DailyPullAsync()
+        {
+            var path = GetDailyWorkingDir();
+            if (path == null) { AppendOutput("ERROR: No git repository found. Set the Working Directory in the card above and Clone from GitLab."); return; }
+
+            IsBusy = true;
+            BusyMessage = "Checking for local changes...";
+            _cts = new CancellationTokenSource();
+            try
+            {
+                // Check for uncommitted changes first
+                var statusResult = await Git.StatusAsync(path, _cts.Token);
+                bool hasLocalChanges = statusResult.Success &&
+                    (statusResult.Output.Contains("Changes not staged") ||
+                     statusResult.Output.Contains("Changes to be committed") ||
+                     statusResult.Output.Contains("Untracked files"));
+
+                if (hasLocalChanges)
+                {
+                    IsBusy = false; // Allow dialog interaction
+                    var answer = Views.StyledDialog.ShowConfirm(
+                        "Local Changes Detected",
+                        "You have uncommitted local changes",
+                        "Pull may fail if your changes conflict with the remote version.",
+                        new[]
+                        {
+                            "Yes — Stash changes, Pull, then restore (safe)",
+                            "No — Pull anyway (may fail if conflicts exist)",
+                            "Cancel — Abort"
+                        },
+                        Views.StyledDialog.DialogIcon.Warning);
+                    IsBusy = true;
+
+                    if (answer == MessageBoxResult.Cancel)
+                    {
+                        AppendOutput("Pull cancelled.");
+                        return;
+                    }
+
+                    if (answer == MessageBoxResult.Yes)
+                    {
+                        // Stash → Pull → Stash Pop
+                        BusyMessage = "Stashing local changes...";
+                        var stashResult = await Git.StashAsync(path, "Auto-stash before pull", _cts.Token);
+                        if (!stashResult.Success)
+                        {
+                            AppendOutput($"Stash failed: {stashResult.Error}");
+                            return;
+                        }
+
+                        BusyMessage = "Pulling latest changes...";
+                        var pullResult = await Git.PullAsync(path, _cts.Token);
+                        if (!pullResult.Success)
+                        {
+                            AppendOutput($"Pull failed: {pullResult.Error}");
+                            AppendOutput("Your changes are still in stash. Use 'Stash Pop' to restore them.");
+                            return;
+                        }
+
+                        BusyMessage = "Restoring local changes...";
+                        var popResult = await Git.StashPopAsync(path, _cts.Token);
+                        if (popResult.Success)
+                        {
+                            AppendOutput("Pull complete. Local changes restored successfully.");
+                        }
+                        else
+                        {
+                            AppendOutput("Pull succeeded but stash pop had conflicts:");
+                            AppendOutput(popResult.Error);
+                            AppendOutput("Resolve conflicts manually, then commit.");
+                        }
+                        return;
+                    }
+                    // No — just try pull anyway
+                }
+
+                BusyMessage = "Pulling latest changes...";
+                var result = await Git.PullAsync(path, _cts.Token);
+                AppendOutput(result.Success ? "Pull complete." : $"Pull failed: {result.Error}");
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        private async Task DailyPushAsync()
+        {
+            var path = GetDailyWorkingDir();
+            if (path == null) { AppendOutput("ERROR: No git repository found. Set the Working Directory in the card above and Clone from GitLab."); return; }
+
+            IsBusy = true;
+            BusyMessage = "Pushing to GitLab...";
+            _cts = new CancellationTokenSource();
+            try
+            {
+                var result = await Git.PushAsync(path, "origin", Context.DefaultBranch, false, _cts.Token);
+                AppendOutput(result.Success ? "Push complete." : $"Push failed: {result.Error}");
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        private async Task DailyStatusAsync()
+        {
+            var path = GetDailyWorkingDir();
+            if (path == null) { AppendOutput("ERROR: No git repository found. Set the Working Directory in the card above and Clone from GitLab."); return; }
+
+            IsBusy = true;
+            BusyMessage = "Getting status...";
+            _cts = new CancellationTokenSource();
+            try
+            {
+                var result = await Git.StatusAsync(path, _cts.Token);
+                if (result.Success)
+                {
+                    // Extract branch name
+                    var branch = Context.DefaultBranch ?? "main";
+                    var lines = result.Output.Split('\n');
+                    foreach (var l in lines)
+                    {
+                        if (l.StartsWith("On branch "))
+                        {
+                            branch = l.Substring("On branch ".Length).Trim();
+                            break;
+                        }
+                    }
+
+                    IsBusy = false;
+                    Views.StyledDialog.ShowStatusViewer(result.Output, branch);
+                    return;
+                }
+                else
+                {
+                    AppendOutput($"Status failed: {result.Error}");
+                }
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        private async Task DailyDiffAsync()
+        {
+            var path = GetDailyWorkingDir();
+            if (path == null) { AppendOutput("ERROR: No git repository found. Set the Working Directory in the card above and Clone from GitLab."); return; }
+
+            IsBusy = true;
+            BusyMessage = "Getting diff...";
+            _cts = new CancellationTokenSource();
+            try
+            {
+                var result = await Git.DiffAsync(path, false, _cts.Token);
+                if (result.Success)
+                {
+                    var output = result.Output?.Trim();
+                    if (string.IsNullOrEmpty(output))
+                    {
+                        // Try staged diff
+                        var stagedResult = await Git.DiffAsync(path, true, _cts.Token);
+                        output = stagedResult.Success ? stagedResult.Output?.Trim() : "";
+                    }
+
+                    if (string.IsNullOrEmpty(output))
+                    {
+                        AppendOutput("No changes detected (working tree is clean).");
+                    }
+                    else
+                    {
+                        IsBusy = false;
+                        Views.StyledDialog.ShowDiffViewer("Git Diff — Changes", output);
+                        return;
+                    }
+                }
+                else
+                {
+                    AppendOutput($"Diff failed: {result.Error}");
+                }
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        private async Task DailyLogAsync()
+        {
+            var path = GetDailyWorkingDir();
+            if (path == null) { AppendOutput("ERROR: No git repository found. Set the Working Directory in the card above and Clone from GitLab."); return; }
+
+            IsBusy = true;
+            BusyMessage = "Loading commit history...";
+            _cts = new CancellationTokenSource();
+            try
+            {
+                var result = await Git.LogDetailedAsync(path, 30, _cts.Token);
+                if (result.Success)
+                {
+                    IsBusy = false;
+                    Views.StyledDialog.ShowLogViewer(result.Output ?? "");
+                    return;
+                }
+                else
+                {
+                    AppendOutput($"Log failed: {result.Error}");
+                }
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        private async Task DailyCommitAsync()
+        {
+            var path = GetDailyWorkingDir();
+            if (path == null) { AppendOutput("ERROR: No git repository found. Set the Working Directory in the card above and Clone from GitLab."); return; }
+            if (string.IsNullOrWhiteSpace(DailyCommitMessage))
+            {
+                AppendOutput("ERROR: Commit message is empty.");
+                return;
+            }
+
+            IsBusy = true;
+            BusyMessage = "Staging and committing...";
+            _cts = new CancellationTokenSource();
+            try
+            {
+                var addResult = await Git.AddAllAsync(path, _cts.Token);
+                if (!addResult.Success) { AppendOutput($"Stage failed: {addResult.Error}"); return; }
+
+                var commitResult = await Git.CommitAsync(path, DailyCommitMessage, _cts.Token);
+                if (commitResult.Success)
+                {
+                    AppendOutput("Commit successful.");
+                    DailyCommitMessage = "";
+                }
+                else
+                    AppendOutput($"Commit failed: {commitResult.Error}");
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        private async Task DailyCommitPushAsync()
+        {
+            var path = GetDailyWorkingDir();
+            if (path == null) { AppendOutput("ERROR: No git repository found. Set the Working Directory in the card above and Clone from GitLab."); return; }
+            if (string.IsNullOrWhiteSpace(DailyCommitMessage))
+            {
+                AppendOutput("ERROR: Commit message is empty.");
+                return;
+            }
+
+            IsBusy = true;
+            BusyMessage = "Staging, committing, and pushing...";
+            _cts = new CancellationTokenSource();
+            try
+            {
+                var addResult = await Git.AddAllAsync(path, _cts.Token);
+                if (!addResult.Success) { AppendOutput($"Stage failed: {addResult.Error}"); return; }
+
+                var commitResult = await Git.CommitAsync(path, DailyCommitMessage, _cts.Token);
+                if (!commitResult.Success) { AppendOutput($"Commit failed: {commitResult.Error}"); return; }
+
+                AppendOutput("Commit successful. Pushing...");
+                DailyCommitMessage = "";
+
+                var pushResult = await Git.PushAsync(path, "origin", Context.DefaultBranch, false, _cts.Token);
+                AppendOutput(pushResult.Success ? "Push complete." : $"Push failed: {pushResult.Error}");
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        private async Task DailyCreateBranchAsync()
+        {
+            var path = GetDailyWorkingDir();
+            if (path == null) { AppendOutput("ERROR: No git repository found. Set the Working Directory in the card above and Clone from GitLab."); return; }
+            if (string.IsNullOrWhiteSpace(NewBranchName))
+            {
+                AppendOutput("ERROR: Branch name is empty.");
+                return;
+            }
+
+            IsBusy = true;
+            BusyMessage = "Creating branch...";
+            _cts = new CancellationTokenSource();
+            try
+            {
+                var result = await Git.CheckoutAsync(path, NewBranchName, true, _cts.Token);
+                if (result.Success)
+                {
+                    AppendOutput($"Switched to new branch '{NewBranchName}'.");
+                    NewBranchName = "";
+                }
+                else
+                    AppendOutput($"Failed: {result.Error}");
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        private async Task DailyListBranchesAsync()
+        {
+            var path = GetDailyWorkingDir();
+            if (path == null) { AppendOutput("ERROR: No git repository found. Set the Working Directory in the card above and Clone from GitLab."); return; }
+
+            IsBusy = true;
+            _cts = new CancellationTokenSource();
+            try { await Git.BranchListAsync(path, _cts.Token); }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        private async Task DailySwitchMainAsync()
+        {
+            var path = GetDailyWorkingDir();
+            if (path == null) { AppendOutput("ERROR: No git repository found. Set the Working Directory in the card above and Clone from GitLab."); return; }
+
+            IsBusy = true;
+            BusyMessage = "Switching to main...";
+            _cts = new CancellationTokenSource();
+            try
+            {
+                var result = await Git.CheckoutAsync(path, Context.DefaultBranch, false, _cts.Token);
+                AppendOutput(result.Success ? $"Switched to '{Context.DefaultBranch}'." : $"Failed: {result.Error}");
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        private async Task DailyStashAsync()
+        {
+            var path = GetDailyWorkingDir();
+            if (path == null) { AppendOutput("ERROR: No git repository found. Set the Working Directory in the card above and Clone from GitLab."); return; }
+
+            IsBusy = true;
+            BusyMessage = "Stashing changes...";
+            _cts = new CancellationTokenSource();
+            try
+            {
+                var result = await Git.StashAsync(path, StashMessage, _cts.Token);
+                if (result.Success)
+                {
+                    AppendOutput("Changes stashed.");
+                    StashMessage = "";
+                }
+                else
+                    AppendOutput($"Stash failed: {result.Error}");
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        private async Task DailyStashPopAsync()
+        {
+            var path = GetDailyWorkingDir();
+            if (path == null) { AppendOutput("ERROR: No git repository found. Set the Working Directory in the card above and Clone from GitLab."); return; }
+
+            IsBusy = true;
+            BusyMessage = "Restoring stashed changes...";
+            _cts = new CancellationTokenSource();
+            try
+            {
+                var result = await Git.StashPopAsync(path, _cts.Token);
+                AppendOutput(result.Success ? "Stash restored." : $"Stash pop failed: {result.Error}");
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
         // === Helpers ===
 
         public void AppendOutput(string text)
@@ -611,6 +1589,28 @@ namespace CCToGitlabMgr.ViewModels
             }
         }
 
+        /// <summary>
+        /// Delete a directory even if it contains read-only files (e.g. .git objects)
+        /// </summary>
+        private static void ForceDeleteDirectory(string path)
+        {
+            if (!Directory.Exists(path)) return;
+
+            // Clear read-only attributes on all files
+            foreach (var file in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories))
+            {
+                try
+                {
+                    var attrs = File.GetAttributes(file);
+                    if ((attrs & FileAttributes.ReadOnly) != 0)
+                        File.SetAttributes(file, attrs & ~FileAttributes.ReadOnly);
+                }
+                catch { }
+            }
+
+            Directory.Delete(path, true);
+        }
+
         private static void CopyDirectory(string source, string dest)
         {
             Directory.CreateDirectory(dest);
@@ -626,6 +1626,372 @@ namespace CCToGitlabMgr.ViewModels
                 var destDir = Path.Combine(dest, Path.GetFileName(dir));
                 CopyDirectory(dir, destDir);
             }
+        }
+
+        // === Project Management ===
+
+        public void RefreshProjectList()
+        {
+            SavedProjects.Clear();
+            foreach (var p in ProjectService.ListProjects())
+                SavedProjects.Add(p);
+        }
+
+        private void NewProject()
+        {
+            if (IsDirty)
+            {
+                var result = Views.StyledDialog.ShowConfirm(
+                    "Unsaved Changes",
+                    "Save current project first?",
+                    "You have unsaved changes that will be lost if you continue.",
+                    new[] { "Yes — Save and continue", "No — Discard changes", "Cancel — Go back" },
+                    Views.StyledDialog.DialogIcon.Question);
+                if (result == MessageBoxResult.Cancel) return;
+                if (result == MessageBoxResult.Yes) SaveProject();
+            }
+
+            ResetToDefaults();
+            CurrentProjectId = null;
+            CurrentProjectName = "Untitled Project";
+            ConsoleOutput = "";
+            foreach (var step in Steps) step.Status = "Pending";
+            CurrentStepIndex = 0;
+            IsDirty = false;
+            AppendOutput("New project created.");
+        }
+
+        private void SaveProject()
+        {
+            if (CurrentProjectId == null)
+            {
+                // First save — ask for a name
+                var name = PromptProjectName();
+                if (name == null) return;
+                CurrentProjectId = Guid.NewGuid().ToString("N");
+                CurrentProjectName = name;
+            }
+
+            try
+            {
+                var data = CreateSaveData();
+                ProjectService.Save(data);
+                IsDirty = false;
+                RefreshProjectList();
+                AppendOutput($"Project saved: {CurrentProjectName}");
+            }
+            catch (Exception ex)
+            {
+                AppendOutput($"ERROR saving: {ex.Message}");
+            }
+        }
+
+        private void LoadProject(string projectId)
+        {
+            if (IsDirty)
+            {
+                var result = Views.StyledDialog.ShowConfirm(
+                    "Unsaved Changes",
+                    "Save current project first?",
+                    "You have unsaved changes that will be lost if you load another project.",
+                    new[] { "Yes — Save and continue", "No — Discard changes", "Cancel — Go back" },
+                    Views.StyledDialog.DialogIcon.Question);
+                if (result == MessageBoxResult.Cancel) return;
+                if (result == MessageBoxResult.Yes) SaveProject();
+            }
+
+            try
+            {
+                var data = ProjectService.Load(projectId);
+                RestoreFromSaveData(data);
+                AppendOutput($"Project loaded: {CurrentProjectName}");
+            }
+            catch (Exception ex)
+            {
+                AppendOutput($"ERROR loading: {ex.Message}");
+            }
+        }
+
+        private void DeleteProject(string projectId)
+        {
+            var info = SavedProjects.FirstOrDefault(p => p.ProjectId == projectId);
+            if (info == null) return;
+
+            var result = Views.StyledDialog.ShowConfirm(
+                "Confirm Delete",
+                $"Delete project '{info.DisplayName}'?",
+                "This action cannot be undone. The saved project file will be permanently removed.",
+                null,
+                Views.StyledDialog.DialogIcon.Danger,
+                MessageBoxButton.YesNo);
+            if (result != MessageBoxResult.Yes) return;
+
+            try
+            {
+                ProjectService.Delete(projectId);
+                if (CurrentProjectId == projectId)
+                {
+                    CurrentProjectId = null;
+                    CurrentProjectName = "Untitled Project";
+                }
+                RefreshProjectList();
+                AppendOutput($"Project deleted: {info.DisplayName}");
+            }
+            catch (Exception ex)
+            {
+                AppendOutput($"ERROR deleting: {ex.Message}");
+            }
+        }
+
+        private string PromptProjectName()
+        {
+            var defaultName = string.IsNullOrWhiteSpace(Context.ProjectName) ? "My Migration" : Context.ProjectName;
+            var bgColor = System.Windows.Media.Color.FromRgb(0x0F, 0x14, 0x20);
+            var surfaceColor = System.Windows.Media.Color.FromRgb(0x1A, 0x20, 0x35);
+            var borderColor = System.Windows.Media.Color.FromRgb(0x2A, 0x34, 0x54);
+            var textColor = System.Windows.Media.Color.FromRgb(0xF0, 0xF3, 0xFF);
+            var accentColor = System.Windows.Media.Color.FromRgb(0xFF, 0x6B, 0x35);
+
+            var inputWin = new Window
+            {
+                Title = "Save Project",
+                Width = 450, Height = 200,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Owner = Application.Current.MainWindow,
+                ResizeMode = ResizeMode.NoResize,
+                Background = new System.Windows.Media.SolidColorBrush(bgColor),
+                WindowStyle = WindowStyle.ToolWindow
+            };
+
+            var sp = new System.Windows.Controls.StackPanel { Margin = new Thickness(24) };
+
+            var lbl = new System.Windows.Controls.TextBlock
+            {
+                Text = "Project Name:",
+                Foreground = new System.Windows.Media.SolidColorBrush(textColor),
+                FontSize = 15,
+                FontWeight = FontWeights.SemiBold,
+                Margin = new Thickness(0, 0, 0, 12)
+            };
+
+            var tb = new System.Windows.Controls.TextBox
+            {
+                Text = defaultName,
+                FontSize = 14,
+                Padding = new Thickness(12, 10, 12, 10),
+                Background = new System.Windows.Media.SolidColorBrush(surfaceColor),
+                Foreground = new System.Windows.Media.SolidColorBrush(textColor),
+                BorderBrush = new System.Windows.Media.SolidColorBrush(borderColor),
+                BorderThickness = new Thickness(1),
+                CaretBrush = new System.Windows.Media.SolidColorBrush(accentColor)
+            };
+
+            var btnPanel = new System.Windows.Controls.StackPanel
+            {
+                Orientation = System.Windows.Controls.Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Margin = new Thickness(0, 18, 0, 0)
+            };
+
+            var btnOk = new System.Windows.Controls.Button
+            {
+                Content = "Save",
+                Width = 100, Height = 36,
+                FontSize = 13, FontWeight = FontWeights.SemiBold,
+                Foreground = System.Windows.Media.Brushes.White,
+                Background = new System.Windows.Media.SolidColorBrush(accentColor),
+                BorderThickness = new Thickness(0),
+                Cursor = System.Windows.Input.Cursors.Hand,
+                Margin = new Thickness(0, 0, 8, 0),
+                IsDefault = true
+            };
+
+            var btnCancel = new System.Windows.Controls.Button
+            {
+                Content = "Cancel",
+                Width = 100, Height = 36,
+                FontSize = 13, FontWeight = FontWeights.SemiBold,
+                Foreground = new System.Windows.Media.SolidColorBrush(textColor),
+                Background = new System.Windows.Media.SolidColorBrush(surfaceColor),
+                BorderBrush = new System.Windows.Media.SolidColorBrush(borderColor),
+                BorderThickness = new Thickness(1),
+                Cursor = System.Windows.Input.Cursors.Hand,
+                IsCancel = true
+            };
+
+            string result = null;
+            btnOk.Click += (s, e) => { result = tb.Text; inputWin.Close(); };
+            btnCancel.Click += (s, e) => inputWin.Close();
+
+            btnPanel.Children.Add(btnOk);
+            btnPanel.Children.Add(btnCancel);
+            sp.Children.Add(lbl);
+            sp.Children.Add(tb);
+            sp.Children.Add(btnPanel);
+            inputWin.Content = sp;
+
+            inputWin.ContentRendered += (s, e) => { tb.SelectAll(); tb.Focus(); };
+            inputWin.ShowDialog();
+
+            return string.IsNullOrWhiteSpace(result) ? null : result.Trim();
+        }
+
+        private ProjectSaveData CreateSaveData()
+        {
+            var data = new ProjectSaveData
+            {
+                ProjectId = CurrentProjectId ?? Guid.NewGuid().ToString("N"),
+                DisplayName = CurrentProjectName,
+                CreatedUtc = DateTime.UtcNow,
+                UserName = Context.UserName,
+                UserEmail = Context.UserEmail,
+                AutoCrlf = Context.AutoCrlf,
+                LongPaths = Context.LongPaths,
+                DefaultBranch = Context.DefaultBranch,
+                SourcePath = Context.SourcePath,
+                StagingPath = Context.StagingPath,
+                ProjectName = Context.ProjectName,
+                VsVersion = Context.VsVersion,
+                SlnFilePath = Context.SlnFilePath,
+                GitignoreTemplate = Context.GitignoreTemplate,
+                IncludeWebGitignore = Context.IncludeWebGitignore,
+                GitLabUrl = Context.GitLabUrl,
+                GitLabProjectUrl = Context.GitLabProjectUrl,
+                AuthMethod = Context.AuthMethod,
+                CommitMessage = Context.CommitMessage,
+                RemoteUrl = Context.RemoteUrl,
+                VerifyPath = Context.VerifyPath,
+                DailyWorkingPath = DailyWorkingPath,
+                ClearCaseFilesRemoved = Context.ClearCaseFilesRemoved,
+                BuildArtifactsRemoved = Context.BuildArtifactsRemoved,
+                ProjectSizeBefore = Context.ProjectSizeBefore,
+                ProjectSizeAfter = Context.ProjectSizeAfter,
+                TotalFilesForCommit = Context.TotalFilesForCommit,
+                CurrentStepIndex = CurrentStepIndex,
+            };
+
+            foreach (var step in Steps)
+                data.StepStatuses.Add(new StepStatusEntry { Number = step.Number, Status = step.Status });
+
+            foreach (var item in Context.ChecklistItems)
+                data.ChecklistEntries.Add(new ChecklistEntry { Phase = item.Phase, Text = item.Text, IsDone = item.IsDone });
+
+            foreach (var item in Context.PreservedSubDirs)
+                data.PreservedSubDirs.Add(new PreservedSubDirEntry
+                {
+                    FullPath = item.FullPath,
+                    RelativePath = item.RelativePath,
+                    ParentBuildDir = item.ParentBuildDir,
+                    Name = item.Name,
+                    IsPreserved = item.IsPreserved
+                });
+
+            return data;
+        }
+
+        private void RestoreFromSaveData(ProjectSaveData data)
+        {
+            CurrentProjectId = data.ProjectId;
+            CurrentProjectName = data.DisplayName;
+
+            Context.UserName = data.UserName ?? "";
+            Context.UserEmail = data.UserEmail ?? "";
+            Context.AutoCrlf = data.AutoCrlf;
+            Context.LongPaths = data.LongPaths;
+            Context.DefaultBranch = data.DefaultBranch ?? "main";
+            Context.SourcePath = data.SourcePath ?? "";
+            Context.StagingPath = data.StagingPath ?? "";
+            Context.ProjectName = data.ProjectName ?? "";
+            Context.VsVersion = data.VsVersion ?? "";
+            Context.SlnFilePath = data.SlnFilePath ?? "";
+            Context.GitignoreTemplate = data.GitignoreTemplate ?? "VS2015-2019";
+            Context.IncludeWebGitignore = data.IncludeWebGitignore;
+            Context.GitLabUrl = data.GitLabUrl ?? "";
+            Context.GitLabProjectUrl = data.GitLabProjectUrl ?? "";
+            Context.AuthMethod = data.AuthMethod ?? "HTTPS";
+            Context.CommitMessage = data.CommitMessage ?? "";
+            Context.RemoteUrl = data.RemoteUrl ?? "";
+            Context.VerifyPath = data.VerifyPath ?? "";
+            DailyWorkingPath = data.DailyWorkingPath ?? "";
+            Context.ClearCaseFilesRemoved = data.ClearCaseFilesRemoved;
+            Context.BuildArtifactsRemoved = data.BuildArtifactsRemoved;
+            Context.ProjectSizeBefore = data.ProjectSizeBefore ?? "";
+            Context.ProjectSizeAfter = data.ProjectSizeAfter ?? "";
+            Context.TotalFilesForCommit = data.TotalFilesForCommit;
+
+            foreach (var entry in data.StepStatuses)
+            {
+                var step = Steps.FirstOrDefault(s => s.Number == entry.Number);
+                if (step != null) step.Status = entry.Status;
+            }
+
+            foreach (var entry in data.ChecklistEntries)
+            {
+                var item = Context.ChecklistItems.FirstOrDefault(c => c.Phase == entry.Phase && c.Text == entry.Text);
+                if (item != null) item.IsDone = entry.IsDone;
+            }
+
+            Context.PreservedSubDirs.Clear();
+            foreach (var entry in data.PreservedSubDirs)
+            {
+                Context.PreservedSubDirs.Add(new PreservedSubDir
+                {
+                    FullPath = entry.FullPath,
+                    RelativePath = entry.RelativePath,
+                    ParentBuildDir = entry.ParentBuildDir,
+                    Name = entry.Name,
+                    IsPreserved = entry.IsPreserved
+                });
+            }
+
+            CurrentStepIndex = data.CurrentStepIndex;
+            ConsoleOutput = "";
+            IsDirty = false;
+        }
+
+        private void ResetToDefaults()
+        {
+            Context.UserName = "";
+            Context.UserEmail = "";
+            Context.AutoCrlf = true;
+            Context.LongPaths = true;
+            Context.DefaultBranch = "main";
+            Context.SourcePath = "";
+            Context.StagingPath = "";
+            Context.ProjectName = "";
+            Context.VsVersion = "";
+            Context.SlnFilePath = "";
+            Context.GitignoreTemplate = "VS2015-2019";
+            Context.IncludeWebGitignore = false;
+            Context.GitLabUrl = "";
+            Context.GitLabProjectUrl = "";
+            Context.AuthMethod = "HTTPS";
+            Context.PersonalAccessToken = "";
+            Context.CommitMessage = "";
+            Context.RemoteUrl = "";
+            Context.VerifyPath = "";
+            DailyWorkingPath = "";
+            Context.ClearCaseFilesRemoved = 0;
+            Context.BuildArtifactsRemoved = 0;
+            Context.ProjectSizeBefore = "";
+            Context.ProjectSizeAfter = "";
+            Context.TotalFilesForCommit = 0;
+            Context.PreservedSubDirs.Clear();
+            Context.ChecklistItems = null; // forces re-creation via lazy getter
+        }
+
+        public void OnWindowClosing(System.ComponentModel.CancelEventArgs e)
+        {
+            if (!IsDirty) return;
+
+            var result = Views.StyledDialog.ShowConfirm(
+                "Unsaved Changes",
+                "Save project before closing?",
+                "You have unsaved changes that will be lost.",
+                new[] { "Yes — Save and close", "No — Close without saving", "Cancel — Go back" },
+                Views.StyledDialog.DialogIcon.Question);
+            if (result == MessageBoxResult.Cancel) { e.Cancel = true; return; }
+            if (result == MessageBoxResult.Yes) SaveProject();
         }
     }
 }

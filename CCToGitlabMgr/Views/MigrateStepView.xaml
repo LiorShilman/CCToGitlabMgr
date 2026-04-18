@@ -38,6 +38,33 @@
             </StackPanel>
         </Border>
 
+        <!-- Generate README -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="README.md" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,8"/>
+                <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,14"
+                           Text="Generate an auto-filled README, load your own file, or write from scratch. Edit in the box below, then Save to include it in the initial commit."/>
+
+                <!-- Action buttons -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                    <Button Content="Auto-Generate" Command="{Binding GenerateReadmeCommand}"
+                            Style="{StaticResource AccentButton}" Padding="14,7" Margin="0,0,8,0" FontSize="12"/>
+                    <Button Content="Load File..." Command="{Binding LoadReadmeFileCommand}"
+                            Style="{StaticResource SecondaryButton}" Padding="14,7" Margin="0,0,8,0" FontSize="12"/>
+                    <Button Content="Save to Project" Command="{Binding SaveReadmeCommand}"
+                            Style="{StaticResource SecondaryButton}" Padding="14,7" FontSize="12"
+                            BorderBrush="{StaticResource OkBrush}"/>
+                </StackPanel>
+
+                <!-- Editable README content -->
+                <TextBox Style="{StaticResource DarkTextBox}"
+                         Text="{Binding ReadmeContent, UpdateSourceTrigger=PropertyChanged}"
+                         AcceptsReturn="True" TextWrapping="Wrap"
+                         Height="250" VerticalScrollBarVisibility="Auto"
+                         FontFamily="{StaticResource MonoFont}" FontSize="12"/>
+            </StackPanel>
+        </Border>
+
         <!-- Summary & Execute -->
         <Border Style="{StaticResource CardBorder}">
             <StackPanel>
@@ -79,14 +106,20 @@
         </Border>
 
         <!-- Info -->
-        <Border Background="#143B82F6" BorderBrush="#4D3B82F6" BorderThickness="1" CornerRadius="8" Padding="16,12">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="i" FontWeight="Bold" Foreground="#FF3B82F6" FontSize="16" Margin="0,0,12,0" VerticalAlignment="Top"/>
-                <TextBlock TextWrapping="Wrap" Foreground="{StaticResource Text1Brush}" FontSize="13">
-                    <Run FontWeight="Bold" Foreground="{StaticResource Text0Brush}">First commit is special. </Run>
-                    <Run>Include where the code came from, the VS version, and the migration date. Developers joining later will appreciate the context.</Run>
-                </TextBlock>
-            </StackPanel>
+        <Border Background="#143B82F6" BorderBrush="#4D3B82F6" BorderThickness="1" CornerRadius="8" Padding="18,14">
+            <DockPanel>
+                <TextBlock Text="i" FontWeight="Bold" Foreground="#FF3B82F6" FontSize="18"
+                           DockPanel.Dock="Left" Margin="0,2,14,0" VerticalAlignment="Top"/>
+                <StackPanel>
+                    <TextBlock Text="First commit is special" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" FontSize="13" Margin="0,0,0,8"/>
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,5">
+                        <Run>Include where the code came from, the Visual Studio version, and the migration date.</Run>
+                    </TextBlock>
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" TextWrapping="Wrap">
+                        <Run>Developers joining later will appreciate the context.</Run>
+                    </TextBlock>
+                </StackPanel>
+            </DockPanel>
         </Border>
     </StackPanel>
 </UserControl>

@@ -37,24 +37,93 @@
         <!-- Manual Steps -->
         <Border Style="{StaticResource CardBorder}">
             <StackPanel>
-                <TextBlock Text="Manual Build Test" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,12"/>
-                <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" TextWrapping="Wrap">
-                    <Run FontWeight="Bold">1.</Run><Run> Open the .sln in the correct Visual Studio version</Run><LineBreak/>
-                    <Run FontWeight="Bold">2.</Run><Run> Allow NuGet package restore if prompted</Run><LineBreak/>
-                    <Run FontWeight="Bold">3.</Run><Run> Build > Clean Solution, then Build > Rebuild Solution</Run><LineBreak/>
-                    <Run FontWeight="Bold">4.</Run><Run> Verify: 0 errors, warnings look normal</Run><LineBreak/>
-                    <Run FontWeight="Bold">5.</Run><Run> Run the project (F5) — verify normal behavior</Run>
-                </TextBlock>
+                <TextBlock Text="Manual Build Test" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,16"/>
+                <StackPanel Margin="0,0,0,4">
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" Margin="0,0,0,10">
+                        <Run FontWeight="Bold" Foreground="{StaticResource AccentHiBrush}">1.</Run>
+                        <Run>  Open the .sln in the correct Visual Studio version</Run>
+                    </TextBlock>
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" Margin="0,0,0,10">
+                        <Run FontWeight="Bold" Foreground="{StaticResource AccentHiBrush}">2.</Run>
+                        <Run>  Allow NuGet package restore if prompted</Run>
+                    </TextBlock>
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" Margin="0,0,0,10">
+                        <Run FontWeight="Bold" Foreground="{StaticResource AccentHiBrush}">3.</Run>
+                        <Run>  Build > Clean Solution, then Build > Rebuild Solution</Run>
+                    </TextBlock>
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" Margin="0,0,0,10">
+                        <Run FontWeight="Bold" Foreground="{StaticResource AccentHiBrush}">4.</Run>
+                        <Run>  Verify: 0 errors, warnings look normal</Run>
+                    </TextBlock>
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" Margin="0,0,0,4">
+                        <Run FontWeight="Bold" Foreground="{StaticResource AccentHiBrush}">5.</Run>
+                        <Run>  Run the project (F5) — verify normal behavior</Run>
+                    </TextBlock>
+                </StackPanel>
             </StackPanel>
         </Border>
 
         <!-- Warning -->
-        <Border Background="#14FBBF24" BorderBrush="#4DFBBF24" BorderThickness="1" CornerRadius="8" Padding="16,12" Margin="0,0,0,16">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="!" FontWeight="Bold" Foreground="{StaticResource WarnBrush}" FontSize="16" Margin="0,0,12,0" VerticalAlignment="Top"/>
-                <TextBlock TextWrapping="Wrap" Foreground="{StaticResource Text1Brush}" FontSize="13">
-                    <Run FontWeight="Bold" Foreground="{StaticResource Text0Brush}">If Build fails: </Run>
-                    <Run>(1) A required file was excluded by .gitignore — edit and update. (2) External DLL references missing — add to libs/ with gitignore exception, or switch to NuGet.</Run>
+        <Border Background="#14FBBF24" BorderBrush="#4DFBBF24" BorderThickness="1" CornerRadius="8" Padding="18,14" Margin="0,0,0,16">
+            <DockPanel>
+                <TextBlock Text="!" FontWeight="Bold" Foreground="{StaticResource WarnBrush}" FontSize="18"
+                           DockPanel.Dock="Left" Margin="0,2,14,0" VerticalAlignment="Top"/>
+                <StackPanel>
+                    <TextBlock Text="If Build fails after clone" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" FontSize="13" Margin="0,0,0,10"/>
+                    <StackPanel Margin="0,0,0,6">
+                        <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" TextWrapping="Wrap">
+                            <Run FontWeight="Bold" Foreground="{StaticResource WarnBrush}">1.</Run>
+                            <Run xml:space="preserve">  A required file was excluded by </Run><Run FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource AccentHiBrush}">.gitignore</Run>
+                        </TextBlock>
+                        <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="12" Margin="20,2,0,0" TextWrapping="Wrap"
+                                   Text="Edit .gitignore and add an exception for the missing file, then commit and push."/>
+                    </StackPanel>
+                    <StackPanel>
+                        <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" TextWrapping="Wrap">
+                            <Run FontWeight="Bold" Foreground="{StaticResource WarnBrush}">2.</Run>
+                            <Run xml:space="preserve">  External DLL references are missing</Run>
+                        </TextBlock>
+                        <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="12" Margin="20,2,0,0" TextWrapping="Wrap"
+                                   Text="Add them to a libs/ folder with a gitignore exception, or switch to NuGet packages."/>
+                    </StackPanel>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Version Tags -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Version Tags" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,8"/>
+                <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,16"
+                           Text="Create a Git tag to mark this version. Tags appear as releases in GitLab under Deploy > Releases."/>
+
+                <!-- Tag Name -->
+                <TextBlock Style="{StaticResource FieldLabel}" Text="Tag Name:"/>
+                <TextBox Style="{StaticResource DarkTextBox}" Margin="0,0,0,12"
+                         Text="{Binding TagName, UpdateSourceTrigger=PropertyChanged}"
+                         FontFamily="{StaticResource MonoFont}"/>
+
+                <!-- Tag Message -->
+                <TextBlock Style="{StaticResource FieldLabel}" Text="Tag Message (optional):"/>
+                <TextBox Style="{StaticResource DarkTextBox}" Margin="0,0,0,16"
+                         Text="{Binding TagMessage, UpdateSourceTrigger=PropertyChanged}"
+                         FontFamily="{StaticResource MonoFont}"/>
+
+                <!-- Buttons -->
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="Create Tag" Command="{Binding CreateTagCommand}"
+                            Style="{StaticResource AccentButton}" Padding="14,7" Margin="0,0,8,0" FontSize="12"/>
+                    <Button Content="Push Tags to GitLab" Command="{Binding PushTagsCommand}"
+                            Style="{StaticResource SecondaryButton}" Padding="14,7" Margin="0,0,8,0" FontSize="12"
+                            BorderBrush="{StaticResource OkBrush}"/>
+                    <Button Content="List Tags" Command="{Binding ListTagsCommand}"
+                            Style="{StaticResource SecondaryButton}" Padding="14,7" FontSize="12"/>
+                </StackPanel>
+
+                <!-- Tip -->
+                <TextBlock Foreground="{StaticResource Text3Brush}" FontSize="11" Margin="0,12,0,0" TextWrapping="Wrap">
+                    <Run FontWeight="SemiBold">Tip:</Run>
+                    <Run xml:space="preserve"> Use semantic versioning — v1.0.0 for the initial migration, v1.0.1 for fixes, v1.1.0 for new features.</Run>
                 </TextBlock>
             </StackPanel>
         </Border>
@@ -62,14 +131,45 @@
         <!-- Post-migration config -->
         <Border Style="{StaticResource CardBorder}">
             <StackPanel>
-                <TextBlock Text="Post-Migration GitLab Config" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,12"/>
-                <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" TextWrapping="Wrap">
-                    <Run FontWeight="Bold">Protected Branches:</Run><Run> Settings > Repository > Protected Branches — protect main</Run><LineBreak/>
-                    <Run FontWeight="Bold">Default Branch:</Run><Run> Verify main is set as default</Run><LineBreak/>
-                    <Run FontWeight="Bold">Merge Request Settings:</Run><Run> Require approvals if working in a team</Run><LineBreak/>
-                    <Run FontWeight="Bold">CI/CD:</Run><Run> Add .gitlab-ci.yml for automated builds (optional)</Run><LineBreak/>
-                    <Run FontWeight="Bold">README:</Run><Run> Update with build instructions and link to old ClearCase archive</Run>
-                </TextBlock>
+                <TextBlock Text="Post-Migration GitLab Config" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,16"/>
+                <Grid Margin="0,0,0,4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Protected Branches" FontWeight="Bold" FontSize="13"
+                               Foreground="{StaticResource AccentHiBrush}" Margin="0,0,16,12"/>
+                    <TextBlock Grid.Row="0" Grid.Column="1" Text="Settings > Repository > Protected Branches — protect main"
+                               FontSize="13" Foreground="{StaticResource Text1Brush}" Margin="0,0,0,12" TextWrapping="Wrap"/>
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Default Branch" FontWeight="Bold" FontSize="13"
+                               Foreground="{StaticResource AccentHiBrush}" Margin="0,0,16,12"/>
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="Verify main is set as default"
+                               FontSize="13" Foreground="{StaticResource Text1Brush}" Margin="0,0,0,12"/>
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Merge Requests" FontWeight="Bold" FontSize="13"
+                               Foreground="{StaticResource AccentHiBrush}" Margin="0,0,16,12"/>
+                    <TextBlock Grid.Row="2" Grid.Column="1" Text="Require approvals if working in a team"
+                               FontSize="13" Foreground="{StaticResource Text1Brush}" Margin="0,0,0,12"/>
+
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="CI/CD" FontWeight="Bold" FontSize="13"
+                               Foreground="{StaticResource AccentHiBrush}" Margin="0,0,16,12"/>
+                    <TextBlock Grid.Row="3" Grid.Column="1" Text="Add .gitlab-ci.yml for automated builds (optional)"
+                               FontSize="13" Foreground="{StaticResource Text1Brush}" Margin="0,0,0,12"/>
+
+                    <TextBlock Grid.Row="4" Grid.Column="0" Text="README" FontWeight="Bold" FontSize="13"
+                               Foreground="{StaticResource AccentHiBrush}" Margin="0,0,16,4"/>
+                    <TextBlock Grid.Row="4" Grid.Column="1" Text="Update with build instructions and link to old ClearCase archive"
+                               FontSize="13" Foreground="{StaticResource Text1Brush}" Margin="0,0,0,4" TextWrapping="Wrap"/>
+                </Grid>
             </StackPanel>
         </Border>
     </StackPanel>

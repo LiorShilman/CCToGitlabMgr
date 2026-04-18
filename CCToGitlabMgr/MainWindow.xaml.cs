@@ -17,5 +17,22 @@ namespace CCToGitlabMgr
             var tb = sender as TextBox;
             tb?.ScrollToEnd();
         }
+
+        private void ProjectSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ProjectSelector.SelectedItem is Services.ProjectInfo info)
+            {
+                var vm = DataContext as MainViewModel;
+                vm?.LoadProjectCommand.Execute(info.ProjectId);
+                // Reset selection so user can re-select the same project
+                ProjectSelector.SelectedIndex = -1;
+            }
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            var vm = DataContext as MainViewModel;
+            vm?.OnWindowClosing(e);
+        }
     }
 }

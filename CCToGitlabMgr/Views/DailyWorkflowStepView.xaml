@@ -1,0 +1,179 @@
+<UserControl x:Class="CCToGitlabMgr.Views.DailyWorkflowStepView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock Style="{StaticResource SectionTitle}">
+            <Run Text="09" Foreground="{StaticResource AccentBrush}" FontSize="24"/>
+            <Run Text="  Daily Workflow — Ongoing Git Operations"/>
+        </TextBlock>
+        <TextBlock Style="{StaticResource SectionDesc}" Text="Day-to-day Git operations for your migrated project. Pull, commit, push, branch, and more."/>
+
+        <!-- Working Directory Setup -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Working Directory" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,8"/>
+                <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,14"
+                           Text="Choose the folder where you develop. Clone from GitLab to a fresh directory — separate from the staging folder used during migration."/>
+
+                <TextBlock Style="{StaticResource FieldLabel}" Text="Working folder:"/>
+                <DockPanel Margin="0,0,0,8">
+                    <Button DockPanel.Dock="Right" Content="Browse..." Command="{Binding BrowseDailyWorkingCommand}"
+                            Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" Padding="14,8"/>
+                    <TextBox Style="{StaticResource DarkTextBox}" Text="{Binding DailyWorkingPath, UpdateSourceTrigger=PropertyChanged}"
+                             FontFamily="{StaticResource MonoFont}"/>
+                </DockPanel>
+
+                <!-- Status indicator -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                    <TextBlock Text="Status: " Foreground="{StaticResource Text2Brush}" FontSize="13" VerticalAlignment="Center"/>
+                    <!-- Ready = green -->
+                    <TextBlock Text="&#x2713; Ready" Foreground="{StaticResource OkBrush}" FontSize="13" FontWeight="Bold"
+                               Visibility="{Binding DailyWorkingDirIsReady, Converter={StaticResource BoolToVis}}"/>
+                    <!-- Not ready = warning -->
+                    <TextBlock Text="{Binding DailyWorkingDirStatus, Mode=OneWay}" Foreground="{StaticResource WarnBrush}" FontSize="13" FontWeight="SemiBold"
+                               Visibility="{Binding DailyWorkingDirIsReady, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"/>
+                </StackPanel>
+
+                <!-- Remote URL display -->
+                <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="13" Margin="0,0,0,12">
+                    <Run Text="Remote URL: "/>
+                    <Run Text="{Binding Context.RemoteUrl, Mode=OneWay}" Foreground="{StaticResource AccentHiBrush}" FontFamily="{StaticResource MonoFont}"/>
+                </TextBlock>
+
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="Clone from GitLab" Command="{Binding CloneToDailyCommand}"
+                            Style="{StaticResource AccentButton}" Padding="14,8" Margin="0,0,8,0" FontSize="12"/>
+                    <TextBlock VerticalAlignment="Center" Foreground="{StaticResource Text3Brush}" FontSize="12"
+                               Text="Clones into the selected folder using the Remote URL from Step 5"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Quick Actions -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Quick Actions" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,8"/>
+                <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="13" Margin="0,0,0,14"
+                           Text="Common Git operations on your working directory."/>
+                <WrapPanel>
+                    <Button Content="Pull (Get Latest)" Command="{Binding DailyPullCommand}"
+                            Style="{StaticResource AccentButton}" Padding="14,8" Margin="0,0,8,8" FontSize="12"/>
+                    <Button Content="Push to GitLab" Command="{Binding DailyPushCommand}"
+                            Style="{StaticResource AccentButton}" Padding="14,8" Margin="0,0,8,8" FontSize="12"/>
+                    <Button Content="Status" Command="{Binding DailyStatusCommand}"
+                            Style="{StaticResource SecondaryButton}" Padding="14,8" Margin="0,0,8,8" FontSize="12"/>
+                    <Button Content="Diff" Command="{Binding DailyDiffCommand}"
+                            Style="{StaticResource SecondaryButton}" Padding="14,8" Margin="0,0,8,8" FontSize="12"/>
+                    <Button Content="Log (Recent)" Command="{Binding DailyLogCommand}"
+                            Style="{StaticResource SecondaryButton}" Padding="14,8" Margin="0,0,8,8" FontSize="12"/>
+                </WrapPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Stage & Commit -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Stage and Commit" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,8"/>
+                <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="13" Margin="0,0,0,14"
+                           Text="Stage all changes and create a commit. Write a clear, short commit message describing what changed."/>
+
+                <TextBlock Style="{StaticResource FieldLabel}" Text="Commit Message:"/>
+                <TextBox Style="{StaticResource DarkTextBox}"
+                         Text="{Binding DailyCommitMessage, UpdateSourceTrigger=PropertyChanged}"
+                         AcceptsReturn="True" TextWrapping="Wrap" Height="80"
+                         VerticalScrollBarVisibility="Auto"
+                         FontFamily="{StaticResource MonoFont}" FontSize="12"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                    <Button Content="Stage All + Commit" Command="{Binding DailyCommitCommand}"
+                            Style="{StaticResource AccentButton}" Padding="14,8" Margin="0,0,8,0" FontSize="12"/>
+                    <Button Content="Stage All + Commit + Push" Command="{Binding DailyCommitPushCommand}"
+                            Style="{StaticResource AccentButton}" Padding="14,8" FontSize="12"/>
+                </StackPanel>
+
+                <TextBlock Foreground="{StaticResource Text3Brush}" FontSize="11" Margin="0,10,0,0" TextWrapping="Wrap">
+                    <Run FontWeight="SemiBold">Tip:</Run>
+                    <Run xml:space="preserve"> Write commit messages like "Fix login timeout bug" or "Add export-to-CSV feature". Keep the first line under 72 characters.</Run>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <!-- Branches -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Branches" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,8"/>
+                <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="13" Margin="0,0,0,14"
+                           Text="Create feature branches for isolated work, then merge back via GitLab Merge Requests."/>
+
+                <TextBlock Style="{StaticResource FieldLabel}" Text="New Branch Name:"/>
+                <DockPanel Margin="0,0,0,12">
+                    <Button DockPanel.Dock="Right" Content="Create &amp; Switch" Command="{Binding DailyCreateBranchCommand}"
+                            Style="{StaticResource AccentButton}" Margin="8,0,0,0" Padding="14,8" FontSize="12"/>
+                    <TextBox Style="{StaticResource DarkTextBox}"
+                             Text="{Binding NewBranchName, UpdateSourceTrigger=PropertyChanged}"
+                             FontFamily="{StaticResource MonoFont}"/>
+                </DockPanel>
+
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="List Branches" Command="{Binding DailyListBranchesCommand}"
+                            Style="{StaticResource SecondaryButton}" Padding="14,8" Margin="0,0,8,0" FontSize="12"/>
+                    <Button Content="Switch to main" Command="{Binding DailySwitchMainCommand}"
+                            Style="{StaticResource SecondaryButton}" Padding="14,8" FontSize="12"/>
+                </StackPanel>
+
+                <TextBlock Foreground="{StaticResource Text3Brush}" FontSize="11" Margin="0,10,0,0" TextWrapping="Wrap">
+                    <Run FontWeight="SemiBold">Convention:</Run>
+                    <Run xml:space="preserve"> Use prefixes like feature/, bugfix/, hotfix/ — e.g. feature/add-export or bugfix/login-timeout.</Run>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <!-- Stash -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Stash" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,8"/>
+                <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="13" Margin="0,0,0,14"
+                           Text="Temporarily save uncommitted changes when you need to switch context. Pop them back when you're ready."/>
+
+                <TextBlock Style="{StaticResource FieldLabel}" Text="Stash Message (optional):"/>
+                <DockPanel Margin="0,0,0,12">
+                    <Button DockPanel.Dock="Right" Content="Stash Save" Command="{Binding DailyStashCommand}"
+                            Style="{StaticResource AccentButton}" Margin="8,0,0,0" Padding="14,8" FontSize="12"/>
+                    <TextBox Style="{StaticResource DarkTextBox}"
+                             Text="{Binding StashMessage, UpdateSourceTrigger=PropertyChanged}"
+                             FontFamily="{StaticResource MonoFont}"/>
+                </DockPanel>
+
+                <Button Content="Stash Pop (Restore)" Command="{Binding DailyStashPopCommand}"
+                        Style="{StaticResource SecondaryButton}" Padding="14,8" FontSize="12"
+                        HorizontalAlignment="Left"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Workflow Guide -->
+        <Border Background="#143B82F6" BorderBrush="#4D3B82F6" BorderThickness="1" CornerRadius="8" Padding="18,14">
+            <DockPanel>
+                <TextBlock Text="i" FontWeight="Bold" Foreground="#FF3B82F6" FontSize="18"
+                           DockPanel.Dock="Left" Margin="0,2,14,0" VerticalAlignment="Top"/>
+                <StackPanel>
+                    <TextBlock Text="Typical daily flow" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" FontSize="13" Margin="0,0,0,10"/>
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" Margin="0,0,0,5">
+                        <Run FontWeight="Bold" Foreground="#FF3B82F6">1.</Run><Run xml:space="preserve">  Pull — get the latest changes from GitLab</Run>
+                    </TextBlock>
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" Margin="0,0,0,5">
+                        <Run FontWeight="Bold" Foreground="#FF3B82F6">2.</Run><Run xml:space="preserve">  Make your code changes</Run>
+                    </TextBlock>
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" Margin="0,0,0,5">
+                        <Run FontWeight="Bold" Foreground="#FF3B82F6">3.</Run><Run xml:space="preserve">  Stage + Commit — save a snapshot with a message</Run>
+                    </TextBlock>
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" Margin="0,0,0,5">
+                        <Run FontWeight="Bold" Foreground="#FF3B82F6">4.</Run><Run xml:space="preserve">  Push — upload to GitLab</Run>
+                    </TextBlock>
+                    <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap">
+                        <Run>Use branches for features that take more than a day.</Run>
+                    </TextBlock>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+    </StackPanel>
+</UserControl>
