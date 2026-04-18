@@ -2223,7 +2223,7 @@ namespace CCToGitlabMgr.Views
             });
             titleRight.Children.Add(new TextBlock
             {
-                Text = "ClearCase \u2192 GitLab Migration Guide",
+                Text = "ClearCase \u2192 Git Migration Guide",
                 FontSize = 12,
                 Foreground = Text2Brush,
                 VerticalAlignment = VerticalAlignment.Center

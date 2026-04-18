@@ -6,7 +6,7 @@
             <Run Text="06" Foreground="{StaticResource AccentBrush}" FontSize="24"/>
             <Run Text="  Migrate — Init, Commit, Push"/>
         </TextBlock>
-        <TextBlock Style="{StaticResource SectionDesc}" Text="The moment of truth — from clean staging to your first commit on GitLab."/>
+        <TextBlock Style="{StaticResource SectionDesc}" Text="The moment of truth — from clean staging to your first commit on the remote."/>
 
         <!-- Dry Run -->
         <Border Style="{StaticResource CardBorder}">

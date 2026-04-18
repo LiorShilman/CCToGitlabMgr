@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 
 [assembly: AssemblyTitle("CCToGitlabMgr")]
-[assembly: AssemblyDescription("ClearCase to GitLab Migration Tool")]
+[assembly: AssemblyDescription("ClearCase to GitLab/GitHub Migration Tool")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("CCToGitlabMgr")]

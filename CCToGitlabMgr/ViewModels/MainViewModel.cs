@@ -77,9 +77,11 @@ namespace CCToGitlabMgr.ViewModels
         private bool _isDirty;
         public bool IsDirty { get => _isDirty; set { SetProperty(ref _isDirty, value); OnPropertyChanged(nameof(WindowTitle)); } }
 
+        public string PlatformName => Context?.RemotePlatform ?? "GitLab";
+
         public string WindowTitle => IsDirty
-            ? $"{CurrentProjectName}* — ClearCase -> GitLab"
-            : $"{CurrentProjectName} — ClearCase -> GitLab";
+            ? $"{CurrentProjectName}* — ClearCase -> {PlatformName}"
+            : $"{CurrentProjectName} — ClearCase -> {PlatformName}";
 
         private ObservableCollection<ProjectInfo> _savedProjects = new ObservableCollection<ProjectInfo>();
         public ObservableCollection<ProjectInfo> SavedProjects { get => _savedProjects; set => SetProperty(ref _savedProjects, value); }
@@ -119,7 +121,7 @@ namespace CCToGitlabMgr.ViewModels
             get
             {
                 if (string.IsNullOrWhiteSpace(DailyWorkingPath))
-                    return "Not set — choose a working directory or clone from GitLab";
+                    return $"Not set — choose a working directory or clone from {PlatformName}";
                 if (!Directory.Exists(DailyWorkingPath))
                     return "Directory does not exist";
                 if (!Directory.Exists(Path.Combine(DailyWorkingPath, ".git")))
@@ -254,7 +256,15 @@ namespace CCToGitlabMgr.ViewModels
             _ = CheckGitAsync();
 
             // Dirty tracking
-            Context.PropertyChanged += (s, e) => { if (!_suppressDirty) IsDirty = true; };
+            Context.PropertyChanged += (s, e) =>
+            {
+                if (!_suppressDirty) IsDirty = true;
+                if (e.PropertyName == nameof(MigrationContext.RemotePlatform))
+                {
+                    OnPropertyChanged(nameof(PlatformName));
+                    OnPropertyChanged(nameof(WindowTitle));
+                }
+            };
         }
 
         private bool _suppressDirty;
@@ -265,7 +275,7 @@ namespace CCToGitlabMgr.ViewModels
             Steps.Add(new StepInfo { Number = 2, Title = "Prepare", Icon = ">" });
             Steps.Add(new StepInfo { Number = 3, Title = "Clean", Icon = "X" });
             Steps.Add(new StepInfo { Number = 4, Title = "Gitignore", Icon = "." });
-            Steps.Add(new StepInfo { Number = 5, Title = "GitLab", Icon = "G" });
+            Steps.Add(new StepInfo { Number = 5, Title = "Remote", Icon = "G" });
             Steps.Add(new StepInfo { Number = 6, Title = "Migrate", Icon = "!" });
             Steps.Add(new StepInfo { Number = 7, Title = "Verify", Icon = "?" });
             Steps.Add(new StepInfo { Number = 8, Title = "Checklist", Icon = "#" });
@@ -409,8 +419,8 @@ namespace CCToGitlabMgr.ViewModels
                     if (!string.IsNullOrWhiteSpace(Context.RemoteUrl))
                     {
                         step.Status = "Completed";
-                        AutoCheckItem("pre", "GitLab credentials configured");
-                        AutoCheckItem("pre", "Empty GitLab project created");
+                        AutoCheckItem("pre", "Remote credentials configured");
+                        AutoCheckItem("pre", "Empty remote project created");
                     }
                     break;
                 case 7: // Checklist — complete if all items checked
@@ -456,8 +466,8 @@ namespace CCToGitlabMgr.ViewModels
 
             if (!string.IsNullOrWhiteSpace(Context.RemoteUrl))
             {
-                AutoCheckItem("pre", "GitLab credentials configured");
-                AutoCheckItem("pre", "Empty GitLab project created");
+                AutoCheckItem("pre", "Remote credentials configured");
+                AutoCheckItem("pre", "Empty remote project created");
             }
 
             // During-migration checks
@@ -486,7 +496,7 @@ namespace CCToGitlabMgr.ViewModels
             if (Steps[5].Status == "Completed")
             {
                 AutoCheckItem("during", "First commit done");
-                AutoCheckItem("during", "Push to GitLab succeeded");
+                AutoCheckItem("during", "Push to remote succeeded");
             }
 
             // Post-migration checks
@@ -938,7 +948,7 @@ namespace CCToGitlabMgr.ViewModels
                 if (success)
                 {
                     AutoCheckItem("during", "First commit done");
-                    AutoCheckItem("during", "Push to GitLab succeeded");
+                    AutoCheckItem("during", "Push to remote succeeded");
                 }
                 Steps[5].Status = success ? "Completed" : "Error";
             }
@@ -1081,14 +1091,14 @@ namespace CCToGitlabMgr.ViewModels
             }
 
             IsBusy = true;
-            BusyMessage = "Pushing tags to GitLab...";
+            BusyMessage = $"Pushing tags to {PlatformName}...";
             _cts = new CancellationTokenSource();
 
             try
             {
                 var result = await Git.PushAllTagsAsync(path, "origin", _cts.Token);
                 if (result.Success)
-                    AppendOutput("All tags pushed to GitLab.");
+                    AppendOutput($"All tags pushed to {PlatformName}.");
                 else
                     AppendOutput($"Push failed: {result.Error}");
             }
@@ -1110,7 +1120,7 @@ namespace CCToGitlabMgr.ViewModels
             // Description
             sb.AppendLine("## Description");
             sb.AppendLine();
-            sb.AppendLine($"This project was migrated from **IBM ClearCase** to **GitLab** on {date}.");
+            sb.AppendLine($"This project was migrated from **IBM ClearCase** to **{PlatformName}** on {date}.");
             sb.AppendLine();
 
             // Quick Start
@@ -1174,7 +1184,7 @@ namespace CCToGitlabMgr.ViewModels
             sb.AppendLine("git add .");
             sb.AppendLine("git commit -m \"Brief description of changes\"");
             sb.AppendLine();
-            sb.AppendLine("# Push to GitLab");
+            sb.AppendLine($"# Push to {PlatformName}");
             sb.AppendLine("git push");
             sb.AppendLine("```");
             sb.AppendLine();
@@ -1198,7 +1208,7 @@ namespace CCToGitlabMgr.ViewModels
             sb.AppendLine("|--------|-------|");
             sb.AppendLine($"| Migration Date | {date} |");
             sb.AppendLine($"| Source | IBM ClearCase |");
-            sb.AppendLine($"| Target | GitLab |");
+            sb.AppendLine($"| Target | {PlatformName} |");
             if (!string.IsNullOrWhiteSpace(Context.VsVersion))
                 sb.AppendLine($"| Visual Studio | {Context.VsVersion} |");
             sb.AppendLine($"| Gitignore Template | {Context.GitignoreTemplate} |");
@@ -1287,7 +1297,7 @@ namespace CCToGitlabMgr.ViewModels
         {
             if (string.IsNullOrWhiteSpace(Context.RemoteUrl))
             {
-                AppendOutput("ERROR: Remote URL is empty. Complete Step 5 (GitLab) first.");
+                AppendOutput($"ERROR: Remote URL is empty. Complete Step 5 ({PlatformName}) first.");
                 return;
             }
             if (string.IsNullOrWhiteSpace(DailyWorkingPath))
@@ -1306,7 +1316,7 @@ namespace CCToGitlabMgr.ViewModels
             }
 
             IsBusy = true;
-            BusyMessage = "Cloning from GitLab...";
+            BusyMessage = $"Cloning from {PlatformName}...";
             _cts = new CancellationTokenSource();
 
             try
@@ -1348,7 +1358,7 @@ namespace CCToGitlabMgr.ViewModels
         private async Task DailyPullAsync()
         {
             var path = GetDailyWorkingDir();
-            if (path == null) { AppendOutput("ERROR: No git repository found. Set the Working Directory in the card above and Clone from GitLab."); return; }
+            if (path == null) { AppendOutput($"ERROR: No git repository found. Set the Working Directory and Clone from {PlatformName}."); return; }
 
             IsBusy = true;
             BusyMessage = "Checking for local changes...";
@@ -1432,10 +1442,10 @@ namespace CCToGitlabMgr.ViewModels
         private async Task DailyPushAsync()
         {
             var path = GetDailyWorkingDir();
-            if (path == null) { AppendOutput("ERROR: No git repository found. Set the Working Directory in the card above and Clone from GitLab."); return; }
+            if (path == null) { AppendOutput($"ERROR: No git repository found. Set the Working Directory and Clone from {PlatformName}."); return; }
 
             IsBusy = true;
-            BusyMessage = "Pushing to GitLab...";
+            BusyMessage = $"Pushing to {PlatformName}...";
             _cts = new CancellationTokenSource();
             try
             {
@@ -1449,7 +1459,7 @@ namespace CCToGitlabMgr.ViewModels
         private async Task DailyStatusAsync()
         {
             var path = GetDailyWorkingDir();
-            if (path == null) { AppendOutput("ERROR: No git repository found. Set the Working Directory in the card above and Clone from GitLab."); return; }
+            if (path == null) { AppendOutput($"ERROR: No git repository found. Set the Working Directory and Clone from {PlatformName}."); return; }
 
             IsBusy = true;
             BusyMessage = "Getting status...";
@@ -1487,7 +1497,7 @@ namespace CCToGitlabMgr.ViewModels
         private async Task DailyDiffAsync()
         {
             var path = GetDailyWorkingDir();
-            if (path == null) { AppendOutput("ERROR: No git repository found. Set the Working Directory in the card above and Clone from GitLab."); return; }
+            if (path == null) { AppendOutput($"ERROR: No git repository found. Set the Working Directory and Clone from {PlatformName}."); return; }
 
             IsBusy = true;
             BusyMessage = "Getting diff...";
@@ -1528,7 +1538,7 @@ namespace CCToGitlabMgr.ViewModels
         private async Task DailyLogAsync()
         {
             var path = GetDailyWorkingDir();
-            if (path == null) { AppendOutput("ERROR: No git repository found. Set the Working Directory in the card above and Clone from GitLab."); return; }
+            if (path == null) { AppendOutput($"ERROR: No git repository found. Set the Working Directory and Clone from {PlatformName}."); return; }
 
             IsBusy = true;
             BusyMessage = "Loading commit history...";
@@ -1554,7 +1564,7 @@ namespace CCToGitlabMgr.ViewModels
         private async Task DailyCommitAsync()
         {
             var path = GetDailyWorkingDir();
-            if (path == null) { AppendOutput("ERROR: No git repository found. Set the Working Directory in the card above and Clone from GitLab."); return; }
+            if (path == null) { AppendOutput($"ERROR: No git repository found. Set the Working Directory and Clone from {PlatformName}."); return; }
             if (string.IsNullOrWhiteSpace(DailyCommitMessage))
             {
                 AppendOutput("ERROR: Commit message is empty.");
@@ -1585,7 +1595,7 @@ namespace CCToGitlabMgr.ViewModels
         private async Task DailyCommitPushAsync()
         {
             var path = GetDailyWorkingDir();
-            if (path == null) { AppendOutput("ERROR: No git repository found. Set the Working Directory in the card above and Clone from GitLab."); return; }
+            if (path == null) { AppendOutput($"ERROR: No git repository found. Set the Working Directory and Clone from {PlatformName}."); return; }
             if (string.IsNullOrWhiteSpace(DailyCommitMessage))
             {
                 AppendOutput("ERROR: Commit message is empty.");
@@ -1616,7 +1626,7 @@ namespace CCToGitlabMgr.ViewModels
         private async Task DailyCreateBranchAsync()
         {
             var path = GetDailyWorkingDir();
-            if (path == null) { AppendOutput("ERROR: No git repository found. Set the Working Directory in the card above and Clone from GitLab."); return; }
+            if (path == null) { AppendOutput($"ERROR: No git repository found. Set the Working Directory and Clone from {PlatformName}."); return; }
             if (string.IsNullOrWhiteSpace(NewBranchName))
             {
                 AppendOutput("ERROR: Branch name is empty.");
@@ -1645,7 +1655,7 @@ namespace CCToGitlabMgr.ViewModels
         private async Task DailyListBranchesAsync()
         {
             var path = GetDailyWorkingDir();
-            if (path == null) { AppendOutput("ERROR: No git repository found. Set the Working Directory in the card above and Clone from GitLab."); return; }
+            if (path == null) { AppendOutput($"ERROR: No git repository found. Set the Working Directory and Clone from {PlatformName}."); return; }
 
             IsBusy = true;
             _cts = new CancellationTokenSource();
@@ -1696,7 +1706,7 @@ namespace CCToGitlabMgr.ViewModels
         private async Task DailyGraphAsync()
         {
             var path = GetDailyWorkingDir();
-            if (path == null) { AppendOutput("ERROR: No git repository found. Set the Working Directory in the card above and Clone from GitLab."); return; }
+            if (path == null) { AppendOutput($"ERROR: No git repository found. Set the Working Directory and Clone from {PlatformName}."); return; }
 
             IsBusy = true;
             BusyMessage = "Loading graph...";
@@ -1752,7 +1762,7 @@ namespace CCToGitlabMgr.ViewModels
         private async Task DailySwitchMainAsync()
         {
             var path = GetDailyWorkingDir();
-            if (path == null) { AppendOutput("ERROR: No git repository found. Set the Working Directory in the card above and Clone from GitLab."); return; }
+            if (path == null) { AppendOutput($"ERROR: No git repository found. Set the Working Directory and Clone from {PlatformName}."); return; }
 
             IsBusy = true;
             BusyMessage = "Switching to main...";
@@ -1769,7 +1779,7 @@ namespace CCToGitlabMgr.ViewModels
         private async Task DailyStashAsync()
         {
             var path = GetDailyWorkingDir();
-            if (path == null) { AppendOutput("ERROR: No git repository found. Set the Working Directory in the card above and Clone from GitLab."); return; }
+            if (path == null) { AppendOutput($"ERROR: No git repository found. Set the Working Directory and Clone from {PlatformName}."); return; }
 
             IsBusy = true;
             BusyMessage = "Stashing changes...";
@@ -1792,7 +1802,7 @@ namespace CCToGitlabMgr.ViewModels
         private async Task DailyStashPopAsync()
         {
             var path = GetDailyWorkingDir();
-            if (path == null) { AppendOutput("ERROR: No git repository found. Set the Working Directory in the card above and Clone from GitLab."); return; }
+            if (path == null) { AppendOutput($"ERROR: No git repository found. Set the Working Directory and Clone from {PlatformName}."); return; }
 
             IsBusy = true;
             BusyMessage = "Restoring stashed changes...";
@@ -2339,6 +2349,7 @@ namespace CCToGitlabMgr.ViewModels
                 SlnFilePath = Context.SlnFilePath,
                 GitignoreTemplate = Context.GitignoreTemplate,
                 IncludeWebGitignore = Context.IncludeWebGitignore,
+                RemotePlatform = Context.RemotePlatform,
                 GitLabUrl = Context.GitLabUrl,
                 GitLabProjectUrl = Context.GitLabProjectUrl,
                 AuthMethod = Context.AuthMethod,
@@ -2390,6 +2401,7 @@ namespace CCToGitlabMgr.ViewModels
             Context.SlnFilePath = data.SlnFilePath ?? "";
             Context.GitignoreTemplate = data.GitignoreTemplate ?? "VS2015-2019";
             Context.IncludeWebGitignore = data.IncludeWebGitignore;
+            Context.RemotePlatform = data.RemotePlatform ?? "GitLab";
             Context.GitLabUrl = data.GitLabUrl ?? "";
             Context.GitLabProjectUrl = data.GitLabProjectUrl ?? "";
             Context.AuthMethod = data.AuthMethod ?? "HTTPS";
@@ -2452,6 +2464,7 @@ namespace CCToGitlabMgr.ViewModels
             Context.SlnFilePath = "";
             Context.GitignoreTemplate = "VS2015-2019";
             Context.IncludeWebGitignore = false;
+            Context.RemotePlatform = "GitLab";
             Context.GitLabUrl = "";
             Context.GitLabProjectUrl = "";
             Context.AuthMethod = "HTTPS";

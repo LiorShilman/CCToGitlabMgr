@@ -39,8 +39,10 @@
                                        FontWeight="Bold" FontSize="12" Foreground="White"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
-                        <TextBlock Text="CLEARCASE -> GITLAB" FontSize="15" FontWeight="Bold"
-                                   Foreground="{StaticResource Text0Brush}" VerticalAlignment="Center"/>
+                        <TextBlock FontSize="15" FontWeight="Bold"
+                                   Foreground="{StaticResource Text0Brush}" VerticalAlignment="Center">
+                            <Run Text="CLEARCASE -> "/><Run Text="{Binding PlatformName, Mode=OneWay}"/>
+                        </TextBlock>
                         <TextBlock Text="{Binding GitVersion}" FontSize="10" Margin="12,0,0,0"
                                    Foreground="{StaticResource Text3Brush}" VerticalAlignment="Center"/>
                     </StackPanel>

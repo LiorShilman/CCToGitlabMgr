@@ -6,7 +6,7 @@
             <Run Text="07" Foreground="{StaticResource AccentBrush}" FontSize="24"/>
             <Run Text="  Verify — Fresh Clone Test"/>
         </TextBlock>
-        <TextBlock Style="{StaticResource SectionDesc}" Text="Clone from GitLab to a fresh folder and verify Build + Run."/>
+        <TextBlock Style="{StaticResource SectionDesc}" Text="Clone from remote to a fresh folder and verify Build + Run."/>
 
         <!-- Clone Test -->
         <Border Style="{StaticResource CardBorder}">
@@ -95,7 +95,7 @@
             <StackPanel>
                 <TextBlock Text="Version Tags" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,8"/>
                 <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,16"
-                           Text="Create a Git tag to mark this version. Tags appear as releases in GitLab under Deploy > Releases."/>
+                           Text="Create a Git tag to mark this version. Tags appear as releases in the remote platform."/>
 
                 <!-- Tag Name -->
                 <TextBlock Style="{StaticResource FieldLabel}" Text="Tag Name:"/>
@@ -113,7 +113,7 @@
                 <StackPanel Orientation="Horizontal">
                     <Button Content="Create Tag" Command="{Binding CreateTagCommand}"
                             Style="{StaticResource AccentButton}" Padding="14,7" Margin="0,0,8,0" FontSize="12"/>
-                    <Button Content="Push Tags to GitLab" Command="{Binding PushTagsCommand}"
+                    <Button Content="Push Tags to Remote" Command="{Binding PushTagsCommand}"
                             Style="{StaticResource SecondaryButton}" Padding="14,7" Margin="0,0,8,0" FontSize="12"
                             BorderBrush="{StaticResource OkBrush}"/>
                     <Button Content="List Tags" Command="{Binding ListTagsCommand}"
@@ -131,7 +131,7 @@
         <!-- Post-migration config -->
         <Border Style="{StaticResource CardBorder}">
             <StackPanel>
-                <TextBlock Text="Post-Migration GitLab Config" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,16"/>
+                <TextBlock Text="Post-Migration Remote Config" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,16"/>
                 <Grid Margin="0,0,0,4">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -162,7 +162,7 @@
 
                     <TextBlock Grid.Row="3" Grid.Column="0" Text="CI/CD" FontWeight="Bold" FontSize="13"
                                Foreground="{StaticResource AccentHiBrush}" Margin="0,0,16,12"/>
-                    <TextBlock Grid.Row="3" Grid.Column="1" Text="Add .gitlab-ci.yml for automated builds (optional)"
+                    <TextBlock Grid.Row="3" Grid.Column="1" Text="Add CI/CD config for automated builds (optional)"
                                FontSize="13" Foreground="{StaticResource Text1Brush}" Margin="0,0,0,12"/>
 
                     <TextBlock Grid.Row="4" Grid.Column="0" Text="README" FontWeight="Bold" FontSize="13"

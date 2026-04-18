@@ -13,10 +13,10 @@
             <StackPanel>
                 <TextBlock Text="Git Identity" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,16"/>
 
-                <TextBlock Style="{StaticResource FieldLabel}" Text="User Name (must match GitLab)"/>
+                <TextBlock Style="{StaticResource FieldLabel}" Text="User Name (must match remote account)"/>
                 <TextBox Style="{StaticResource DarkTextBox}" Text="{Binding Context.UserName, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,12"/>
 
-                <TextBlock Style="{StaticResource FieldLabel}" Text="Email (must match GitLab)"/>
+                <TextBlock Style="{StaticResource FieldLabel}" Text="Email (must match remote account)"/>
                 <TextBox Style="{StaticResource DarkTextBox}" Text="{Binding Context.UserEmail, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,12"/>
             </StackPanel>
         </Border>

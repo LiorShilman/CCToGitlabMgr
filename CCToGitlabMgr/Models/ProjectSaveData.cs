@@ -26,6 +26,7 @@ namespace CCToGitlabMgr.Models
         public string SlnFilePath { get; set; }
         public string GitignoreTemplate { get; set; }
         public bool IncludeWebGitignore { get; set; }
+        public string RemotePlatform { get; set; }
         public string GitLabUrl { get; set; }
         public string GitLabProjectUrl { get; set; }
         public string AuthMethod { get; set; }

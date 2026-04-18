@@ -66,7 +66,10 @@ namespace CCToGitlabMgr.Models
         private bool _includeWebGitignore;
         public bool IncludeWebGitignore { get => _includeWebGitignore; set => SetProperty(ref _includeWebGitignore, value); }
 
-        // == Step 5: GitLab ==
+        // == Step 5: Remote Platform ==
+        private string _remotePlatform = "GitLab";
+        public string RemotePlatform { get => _remotePlatform; set => SetProperty(ref _remotePlatform, value); }
+
         private string _gitlabUrl = "";
         public string GitLabUrl { get => _gitlabUrl; set => SetProperty(ref _gitlabUrl, value); }
 
@@ -124,8 +127,8 @@ namespace CCToGitlabMgr.Models
                 // Before
                 new ChecklistItem("pre", "Git for Windows installed"),
                 new ChecklistItem("pre", "Global git config applied"),
-                new ChecklistItem("pre", "GitLab credentials configured"),
-                new ChecklistItem("pre", "Empty GitLab project created"),
+                new ChecklistItem("pre", "Remote credentials configured"),
+                new ChecklistItem("pre", "Empty remote project created"),
                 new ChecklistItem("pre", "VS version identified"),
                 // During
                 new ChecklistItem("during", "Code copied to staging"),
@@ -135,7 +138,7 @@ namespace CCToGitlabMgr.Models
                 new ChecklistItem("during", ".gitignore placed at root"),
                 new ChecklistItem("during", "git status looks clean"),
                 new ChecklistItem("during", "First commit done"),
-                new ChecklistItem("during", "Push to GitLab succeeded"),
+                new ChecklistItem("during", "Push to remote succeeded"),
                 // After
                 new ChecklistItem("post", "Fresh clone done"),
                 new ChecklistItem("post", "Project opens in VS without errors"),

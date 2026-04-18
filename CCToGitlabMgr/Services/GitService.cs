@@ -354,7 +354,7 @@ namespace CCToGitlabMgr.Services
         public async Task<bool> RunMigrationAsync(string workingDir, string commitMessage, string remoteUrl, string branch = "main", CancellationToken ct = default)
         {
             Output?.Invoke("========================================");
-            Output?.Invoke("  Starting ClearCase -> GitLab Migration");
+            Output?.Invoke("  Starting ClearCase -> Git Migration");
             Output?.Invoke("========================================");
 
             // 1. Init
@@ -385,7 +385,7 @@ namespace CCToGitlabMgr.Services
             if (!result.Success)
             {
                 Output?.Invoke("FAILED: git push");
-                Output?.Invoke("Tip: Check your credentials and that the GitLab project is empty.");
+                Output?.Invoke("Tip: Check your credentials and that the remote project is empty.");
                 return false;
             }
 

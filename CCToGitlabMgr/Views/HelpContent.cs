@@ -4,7 +4,7 @@ namespace CCToGitlabMgr.Views
 {
     /// <summary>
     /// Hebrew help content for the migration guide.
-    /// Technical Git/GitLab terms are kept in English.
+    /// Technical Git terms are kept in English.
     /// </summary>
     public static class HelpContent
     {
@@ -27,11 +27,11 @@ namespace CCToGitlabMgr.Views
                     Title = "מבוא — סקירה כללית",
                     Paragraphs = new[]
                     {
-                        "כלי זה מנחה אותך בתהליך המעבר המלא מ-ClearCase ל-GitLab, צעד אחר צעד.",
+                        "כלי זה מנחה אותך בתהליך המעבר המלא מ-ClearCase ל-GitLab/GitHub, צעד אחר צעד.",
 
                         "התהליך כולל 9 שלבים מובנים:\n" +
                         "הגדרת Git במחשב, הכנת קוד המקור, ניקוי קבצים מיותרים, יצירת .gitignore,\n" +
-                        "הקמת פרויקט ב-GitLab, ביצוע ה-Migration עצמו, אימות התוצאה,\n" +
+                        "הקמת פרויקט ב-GitLab/GitHub, ביצוע ה-Migration עצמו, אימות התוצאה,\n" +
                         "רשימת בדיקות סופית, ולבסוף — כלים לעבודה יום-יומית עם Git.",
 
                         "חשוב — המעבר מ-ClearCase ל-Git הוא חד-כיווני.\n" +
@@ -42,7 +42,7 @@ namespace CCToGitlabMgr.Views
                         "• Source — תיקיית המקור מ-ClearCase (לקריאה בלבד, לא לשנות)\n" +
                         "• Staging — עותק עבודה זמני לביצוע ה-Migration\n" +
                         "• Verify — תיקיית Clone לאימות שהכל הועלה תקין\n" +
-                        "• Working Directory — תיקיית הפיתוח היום-יומי (Clone טרי מ-GitLab)"
+                        "• Working Directory — תיקיית הפיתוח היום-יומי (Clone טרי מ-GitLab/GitHub)"
                     }
                 },
 
@@ -58,7 +58,7 @@ namespace CCToGitlabMgr.Views
 
                         "הגדרות חובה:\n" +
                         "• user.name — השם שלך כפי שיופיע בכל Commit\n" +
-                        "• user.email — כתובת ה-Email שלך (חייבת להתאים לחשבון ה-GitLab)",
+                        "• user.email — כתובת ה-Email שלך (חייבת להתאים לחשבון ה-GitLab/GitHub)",
 
                         "הגדרות מומלצות שהכלי מחיל אוטומטית:\n" +
                         "• core.autocrlf = true — המרה אוטומטית של סיומות שורה (Windows ↔ Linux)\n" +
@@ -167,26 +167,26 @@ namespace CCToGitlabMgr.Views
                 {
                     Id = "step5",
                     Icon = "05",
-                    Title = "GitLab — הקמת פרויקט",
+                    Title = "Remote — הקמת פרויקט",
                     Paragraphs = new[]
                     {
-                        "בשלב זה מגדירים את הפרויקט ב-GitLab שיקבל את הקוד.",
+                        "בשלב זה מגדירים את הפרויקט ב-GitLab/GitHub שיקבל את הקוד.",
 
-                        "יצירת פרויקט ב-GitLab:\n" +
-                        "• היכנסו ל-GitLab דרך הדפדפן\n" +
+                        "יצירת פרויקט ב-GitLab/GitHub:\n" +
+                        "• היכנסו ל-GitLab/GitHub דרך הדפדפן\n" +
                         "• צרו פרויקט חדש (New Project → Create Blank Project)\n" +
                         "• חשוב: בטלו את \"Initialize repository with a README\"\n" +
                         "  (ה-Repository חייב להיות ריק לחלוטין)",
 
                         "הגדרת Authentication:\n" +
-                        "יש שתי שיטות התחברות ל-GitLab:\n\n" +
+                        "יש שתי שיטות התחברות ל-GitLab/GitHub:\n\n" +
                         "SSH Key (מומלץ):\n" +
                         "• מאובטח יותר, לא דורש הקלדת סיסמה בכל Push\n" +
                         "• הכלי יכול לייצר SSH Key עבורכם\n" +
-                        "• יש להעתיק את ה-Public Key ל-GitLab → Settings → SSH Keys\n\n" +
+                        "• יש להעתיק את ה-Public Key ל-GitLab/GitHub → Settings → SSH Keys\n\n" +
                         "Personal Access Token:\n" +
                         "• פשוט יותר להגדרה\n" +
-                        "• צרו Token ב-GitLab → Settings → Access Tokens\n" +
+                        "• צרו Token ב-GitLab/GitHub → Settings → Access Tokens\n" +
                         "• הרשאות נדרשות: read_repository, write_repository\n" +
                         "• ה-Token מוטמע ב-URL של ה-Remote",
 
@@ -205,7 +205,7 @@ namespace CCToGitlabMgr.Views
                     Title = "Migrate — ביצוע ההעברה",
                     Paragraphs = new[]
                     {
-                        "זהו השלב המרכזי — כאן מתבצעת ההעברה בפועל מ-Staging ל-GitLab.",
+                        "זהו השלב המרכזי — כאן מתבצעת ההעברה בפועל מ-Staging ל-GitLab/GitHub.",
 
                         "מה קורה בתהליך:\n" +
                         "הכלי מבצע אוטומטית את הצעדים הבאים:\n" +
@@ -213,8 +213,8 @@ namespace CCToGitlabMgr.Views
                         "2. git branch -M main — הגדרת ה-Branch הראשי\n" +
                         "3. git add . — הוספת כל הקבצים ל-Staging Area\n" +
                         "4. git commit — יצירת ה-Commit הראשון עם ההודעה שכתבתם\n" +
-                        "5. git remote add origin — הגדרת הקישור ל-GitLab\n" +
-                        "6. git push -u origin main — העלאת הקוד ל-GitLab",
+                        "5. git remote add origin — הגדרת הקישור ל-GitLab/GitHub\n" +
+                        "6. git push -u origin main — העלאת הקוד ל-GitLab/GitHub",
 
                         "לפני ביצוע:\n" +
                         "• ודאו שכל השלבים הקודמים הושלמו בהצלחה\n" +
@@ -240,11 +240,11 @@ namespace CCToGitlabMgr.Views
                     Title = "Verify — אימות ההעברה",
                     Paragraphs = new[]
                     {
-                        "אחרי ההעברה חובה לוודא שהכל הועלה תקין ל-GitLab.",
+                        "אחרי ההעברה חובה לוודא שהכל הועלה תקין ל-GitLab/GitHub.",
 
                         "מה עושים:\n" +
                         "• בחרו תיקייה ריקה חדשה עבור ה-Verify\n" +
-                        "• לחצו \"Clone & Verify\" — הכלי יוריד Clone טרי מ-GitLab\n" +
+                        "• לחצו \"Clone & Verify\" — הכלי יוריד Clone טרי מ-GitLab/GitHub\n" +
                         "• הכלי ישווה בין מספר הקבצים ב-Staging לבין ה-Clone\n" +
                         "• פתחו את הפרויקט ב-Visual Studio ונסו לעשות Build",
 
@@ -284,14 +284,14 @@ namespace CCToGitlabMgr.Views
                         "• ✓ קובץ .gitignore הונח",
 
                         "בדיקות אחרי Migration:\n" +
-                        "• ✓ ה-Push ל-GitLab הצליח\n" +
-                        "• ✓ Clone חדש מ-GitLab עובד\n" +
+                        "• ✓ ה-Push ל-GitLab/GitHub הצליח\n" +
+                        "• ✓ Clone חדש מ-GitLab/GitHub עובד\n" +
                         "• ✓ ה-Build עובר בהצלחה\n" +
                         "• ✓ Tests עוברים\n" +
                         "• ✓ כל הקבצים הנדרשים קיימים",
 
                         "בדיקות גישה וצוות:\n" +
-                        "• ✓ חברי הצוות יכולים לגשת לפרויקט ב-GitLab\n" +
+                        "• ✓ חברי הצוות יכולים לגשת לפרויקט ב-GitLab/GitHub\n" +
                         "• ✓ הרשאות Push / Pull מוגדרות נכון\n" +
                         "• ✓ Branch Protection מוגדר ל-main (אופציונלי)\n" +
                         "• ✓ ה-CI/CD Pipeline מוגדר (אם רלוונטי)",
@@ -317,13 +317,13 @@ namespace CCToGitlabMgr.Views
 
                         "הזרימה היום-יומית:\n" +
                         "1. Fetch — בדיקה מה חדש ב-Remote (בלי למזג)\n" +
-                        "2. Pull — קבלת השינויים האחרונים מ-GitLab ומיזוגם\n" +
+                        "2. Pull — קבלת השינויים האחרונים מ-GitLab/GitHub ומיזוגם\n" +
                         "   תמיד התחילו את יום העבודה ב-Pull!\n" +
                         "3. עבודה על הקוד — כתבו, תקנו, שפרו\n" +
                         "4. Stage + Commit — שמירת תמונת מצב עם הודעה מתארת\n" +
                         "   כתבו הודעות Commit קצרות וברורות באנגלית\n" +
                         "   לדוגמה: \"Fix login timeout bug\" או \"Add CSV export feature\"\n" +
-                        "5. Push — העלאת השינויים ל-GitLab\n" +
+                        "5. Push — העלאת השינויים ל-GitLab/GitHub\n" +
                         "   כך חברי הצוות יוכלו לראות את העבודה שלכם",
 
                         "Smart Pull:\n" +
@@ -376,8 +376,8 @@ namespace CCToGitlabMgr.Views
                         "זרימת עבודה עם Branches:\n" +
                         "1. צרו Branch חדש מ-main (\"Create & Switch\")\n" +
                         "2. עבדו ועשו Commits ב-Branch\n" +
-                        "3. עשו Push ל-GitLab\n" +
-                        "4. פתחו Merge Request ב-GitLab\n" +
+                        "3. עשו Push ל-GitLab/GitHub\n" +
+                        "4. פתחו Merge/Pull Request ב-GitLab/GitHub\n" +
                         "5. אחרי Code Review — מבצעים Merge ל-main\n" +
                         "6. מוחקים את ה-Branch המקומי (\"Delete Branch\")",
 
@@ -389,8 +389,8 @@ namespace CCToGitlabMgr.Views
                         "• List Branches — תצוגה מעוצבת של כל ה-Branches\n" +
                         "• Branch Graph — תצוגת עץ ויזואלית של ההיסטוריה",
 
-                        "Merge Request (MR):\n" +
-                        "ב-GitLab, Merge Request הוא הדרך המומלצת למזג שינויים.\n" +
+                        "Merge/Pull Request (MR):\n" +
+                        "ב-GitLab/GitHub, Merge/Pull Request הוא הדרך המומלצת למזג שינויים.\n" +
                         "הוא מאפשר Code Review, דיון, והפעלת CI/CD לפני המיזוג.\n" +
                         "תמיד השתמשו ב-MR במקום Merge ישיר ל-main."
                     }
@@ -419,8 +419,8 @@ namespace CCToGitlabMgr.Views
                         "שימוש ב-Tags:\n" +
                         "• צרו Tag אחרי כל Release\n" +
                         "• כתבו הודעה מתארת את מה שנכלל ב-Release\n" +
-                        "• עשו Push Tags ל-GitLab כדי שיופיעו ב-UI\n" +
-                        "• ב-GitLab ניתן ליצור Release Notes מ-Tags"
+                        "• עשו Push Tags ל-GitLab/GitHub כדי שיופיעו ב-UI\n" +
+                        "• ב-GitLab/GitHub ניתן ליצור Release Notes מ-Tags"
                     }
                 },
 
@@ -444,7 +444,7 @@ namespace CCToGitlabMgr.Views
 
                         "Merge\n" +
                         "מיזוג שינויים מ-Branch אחד לאחר.\n" +
-                        "ב-GitLab מתבצע דרך Merge Request.",
+                        "ב-GitLab/GitHub מתבצע דרך Merge/Pull Request.",
 
                         "Clone\n" +
                         "הורדת עותק מלא של ה-Repository מהשרת למחשב המקומי.\n" +
@@ -476,7 +476,7 @@ namespace CCToGitlabMgr.Views
 
                         "Remote\n" +
                         "שרת מרוחק שמאחסן את ה-Repository.\n" +
-                        "ברירת מחדל: origin (מצביע ל-GitLab).",
+                        "ברירת מחדל: origin (מצביע ל-GitLab/GitHub).",
 
                         "Conflict\n" +
                         "מצב שבו שני אנשים שינו את אותו קטע קוד.\n" +

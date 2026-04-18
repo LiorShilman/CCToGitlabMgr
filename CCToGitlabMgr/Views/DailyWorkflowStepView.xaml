@@ -13,7 +13,7 @@
             <StackPanel>
                 <TextBlock Text="Working Directory" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,8"/>
                 <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,14"
-                           Text="Choose the folder where you develop. Clone from GitLab to a fresh directory — separate from the staging folder used during migration."/>
+                           Text="Choose the folder where you develop. Clone from the remote to a fresh directory — separate from the staging folder used during migration."/>
 
                 <TextBlock Style="{StaticResource FieldLabel}" Text="Working folder:"/>
                 <DockPanel Margin="0,0,0,8">
@@ -47,7 +47,7 @@
                 </TextBlock>
 
                 <StackPanel Orientation="Horizontal">
-                    <Button Content="Clone from GitLab" Command="{Binding CloneToDailyCommand}"
+                    <Button Content="Clone from Remote" Command="{Binding CloneToDailyCommand}"
                             Style="{StaticResource AccentButton}" Padding="14,8" Margin="0,0,8,0" FontSize="12"/>
                     <TextBlock VerticalAlignment="Center" Foreground="{StaticResource Text3Brush}" FontSize="12"
                                Text="Clones into the selected folder using the Remote URL from Step 5"/>
@@ -66,7 +66,7 @@
                             Style="{StaticResource SecondaryButton}" Padding="14,8" Margin="0,0,8,8" FontSize="12"/>
                     <Button Content="Pull (Get Latest)" Command="{Binding DailyPullCommand}"
                             Style="{StaticResource AccentButton}" Padding="14,8" Margin="0,0,8,8" FontSize="12"/>
-                    <Button Content="Push to GitLab" Command="{Binding DailyPushCommand}"
+                    <Button Content="Push to Remote" Command="{Binding DailyPushCommand}"
                             Style="{StaticResource AccentButton}" Padding="14,8" Margin="0,0,8,8" FontSize="12"/>
                     <Button Content="Status" Command="{Binding DailyStatusCommand}"
                             Style="{StaticResource SecondaryButton}" Padding="14,8" Margin="0,0,8,8" FontSize="12"/>
@@ -166,7 +166,7 @@
                     </Border>
                 </DockPanel>
                 <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="13" Margin="0,0,0,14"
-                           Text="Create feature branches for isolated work, then merge back via GitLab Merge Requests."/>
+                           Text="Create feature branches for isolated work, then merge back via Pull/Merge Requests."/>
 
                 <TextBlock Style="{StaticResource FieldLabel}" Text="New Branch Name:"/>
                 <DockPanel Margin="0,0,0,12">
@@ -249,7 +249,7 @@
                 <StackPanel>
                     <TextBlock Text="Typical daily flow" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" FontSize="13" Margin="0,0,0,10"/>
                     <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" Margin="0,0,0,5">
-                        <Run FontWeight="Bold" Foreground="#FF3B82F6">1.</Run><Run xml:space="preserve">  Pull — get the latest changes from GitLab</Run>
+                        <Run FontWeight="Bold" Foreground="#FF3B82F6">1.</Run><Run xml:space="preserve">  Pull — get the latest changes from remote</Run>
                     </TextBlock>
                     <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" Margin="0,0,0,5">
                         <Run FontWeight="Bold" Foreground="#FF3B82F6">2.</Run><Run xml:space="preserve">  Make your code changes</Run>
@@ -258,7 +258,7 @@
                         <Run FontWeight="Bold" Foreground="#FF3B82F6">3.</Run><Run xml:space="preserve">  Stage + Commit — save a snapshot with a message</Run>
                     </TextBlock>
                     <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" Margin="0,0,0,5">
-                        <Run FontWeight="Bold" Foreground="#FF3B82F6">4.</Run><Run xml:space="preserve">  Push — upload to GitLab</Run>
+                        <Run FontWeight="Bold" Foreground="#FF3B82F6">4.</Run><Run xml:space="preserve">  Push — upload to remote</Run>
                     </TextBlock>
                     <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap">
                         <Run>Use branches for features that take more than a day.</Run>

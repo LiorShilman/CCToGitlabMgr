@@ -4,18 +4,37 @@
     <StackPanel>
         <TextBlock Style="{StaticResource SectionTitle}">
             <Run Text="05" Foreground="{StaticResource AccentBrush}" FontSize="24"/>
-            <Run Text="  GitLab — Project Setup"/>
+            <Run Text="  Remote — Project Setup"/>
         </TextBlock>
-        <TextBlock Style="{StaticResource SectionDesc}" Text="Create an empty project on GitLab and configure the remote URL."/>
+        <TextBlock Style="{StaticResource SectionDesc}" Text="Create an empty project on your remote platform and configure the remote URL."/>
+
+        <!-- Platform Selection -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Remote Platform" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,12"/>
+                <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="13" Margin="0,0,0,14"
+                           Text="Select the Git hosting platform you will use."/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                    <RadioButton GroupName="platform" Content="GitLab" FontSize="14" FontWeight="SemiBold"
+                                 IsChecked="{Binding Context.RemotePlatform, Converter={StaticResource EqualConv}, ConverterParameter=GitLab}"
+                                 Foreground="{StaticResource Text1Brush}" Margin="0,0,24,0" Cursor="Hand"/>
+                    <RadioButton GroupName="platform" Content="GitHub" FontSize="14" FontWeight="SemiBold"
+                                 IsChecked="{Binding Context.RemotePlatform, Converter={StaticResource EqualConv}, ConverterParameter=GitHub}"
+                                 Foreground="{StaticResource Text1Brush}" Cursor="Hand"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
 
         <!-- Manual Creation Guide -->
         <Border Style="{StaticResource CardBorder}">
             <StackPanel>
-                <TextBlock Text="Create Project in GitLab" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,16"/>
+                <TextBlock FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,16">
+                    <Run Text="Create Project in "/><Run Text="{Binding PlatformName, Mode=OneWay}"/>
+                </TextBlock>
                 <StackPanel Margin="0,0,0,4">
                     <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" Margin="0,0,0,10">
                         <Run FontWeight="Bold" Foreground="{StaticResource AccentHiBrush}">1.</Run>
-                        <Run>  Log in to GitLab</Run>
+                        <Run>  Log in to your remote platform</Run>
                     </TextBlock>
                     <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" Margin="0,0,0,10">
                         <Run FontWeight="Bold" Foreground="{StaticResource AccentHiBrush}">2.</Run>
@@ -46,10 +65,10 @@
             <StackPanel>
                 <TextBlock Text="Remote URL" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,12"/>
 
-                <TextBlock Style="{StaticResource FieldLabel}" Text="GitLab Clone URL (HTTPS):"/>
+                <TextBlock Style="{StaticResource FieldLabel}" Text="Clone URL (HTTPS):"/>
                 <TextBox Style="{StaticResource DarkTextBox}" Text="{Binding Context.RemoteUrl, UpdateSourceTrigger=PropertyChanged}"
                          FontFamily="{StaticResource MonoFont}" Margin="0,0,0,4"/>
-                <TextBlock Text="Example: https://gitlab.com/your-group/project-name.git" Foreground="{StaticResource Text3Brush}" FontSize="11" Margin="0,0,0,16"/>
+                <TextBlock Text="Example: https://gitlab.com/group/project.git  or  https://github.com/user/project.git" Foreground="{StaticResource Text3Brush}" FontSize="11" Margin="0,0,0,16"/>
 
                 <TextBlock Style="{StaticResource FieldLabel}" Text="Authentication Method:"/>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
@@ -69,7 +88,7 @@
                 <StackPanel>
                     <TextBlock Text="Do NOT initialize the repo!" FontWeight="Bold" Foreground="{StaticResource DangerBrush}" FontSize="13" Margin="0,0,0,8"/>
                     <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,5">
-                        <Run>If GitLab creates an auto-README, the remote won't be empty.</Run>
+                        <Run>If the platform creates an auto-README, the remote won't be empty.</Run>
                     </TextBlock>
                     <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,5">
                         <Run xml:space="preserve">Push will fail with </Run><Run FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource DangerBrush}">"rejected (fetch first)"</Run><Run>.</Run>
