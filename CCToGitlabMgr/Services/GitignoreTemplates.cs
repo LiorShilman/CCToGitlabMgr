@@ -9,6 +9,7 @@ namespace CCToGitlabMgr.Services
                 case "VS2010": return VS2010;
                 case "VS2022": return VS2022;
                 case "Angular": return Angular;
+                case "Python": return Python;
                 default: return VS2015_2019;
             }
         }
@@ -465,5 +466,139 @@ storybook-static/
 view.dat
 lost+found/
 .copyarea.*";
+
+        public const string Python = @"# =========================================
+#  .gitignore for Python
+#  Project migrated from ClearCase
+# =========================================
+
+# ==== Byte-compiled / optimized ====
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# ==== Distribution / packaging ====
+dist/
+build/
+*.egg-info/
+*.egg
+eggs/
+wheels/
+*.whl
+sdist/
+develop-eggs/
+.installed.cfg
+MANIFEST
+pip-wheel-metadata/
+
+# ==== Virtual environments ====
+venv/
+.venv/
+env/
+.env/
+ENV/
+.conda/
+*.virtualenv
+
+# ==== IDE / Editor ====
+.vscode/
+.idea/
+*.iml
+*.iws
+*.ipr
+*.sublime-workspace
+*.sublime-project
+.spyderproject
+.spyproject
+.ropeproject
+
+# ==== Jupyter Notebook ====
+.ipynb_checkpoints/
+
+# ==== Testing / Coverage ====
+.pytest_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+*.cover
+*.py,cover
+.hypothesis/
+nosetests.xml
+coverage.xml
+junit.xml
+test-results/
+
+# ==== mypy / type checking ====
+.mypy_cache/
+.pytype/
+.pyre/
+
+# ==== Environments / Secrets ====
+.env
+.env.local
+.env.*
+*.pem
+*.key
+secrets.json
+config.local.py
+
+# ==== Logs ====
+*.log
+logs/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ==== Database ====
+*.db
+*.sqlite3
+
+# ==== Celery ====
+celerybeat-schedule
+celerybeat.pid
+
+# ==== Flask / Django ====
+instance/
+*.sage.py
+db.sqlite3
+local_settings.py
+staticfiles/
+media/
+
+# ==== Scrapy ====
+.scrapy
+
+# ==== Sphinx documentation ====
+docs/_build/
+
+# ==== PyInstaller ====
+*.manifest
+*.spec
+
+# ==== ClearCase leftovers ====
+*.keep
+*.keep.*
+*.contrib
+*.contrib.*
+view.dat
+lost+found/
+.copyarea.*
+
+# ==== OS / System ====
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+*.lnk
+
+# ==== Temp / backup ====
+*.bak
+*.tmp
+*.swp
+*~
+*.orig";
     }
 }

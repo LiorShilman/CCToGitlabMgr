@@ -14,7 +14,7 @@
                 <TextBlock Text="Template Selection" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,16"/>
 
                 <!-- VS Version Cards -->
-                <UniformGrid Columns="4" Margin="0,0,0,16">
+                <UniformGrid Columns="5" Margin="0,0,0,16">
                     <RadioButton GroupName="gitignore" IsChecked="{Binding Context.GitignoreTemplate, Converter={StaticResource EqualConv}, ConverterParameter=VS2010}" Margin="0,0,8,0" Cursor="Hand">
                         <RadioButton.Template>
                             <ControlTemplate TargetType="RadioButton">
@@ -93,7 +93,7 @@
                         </RadioButton.Template>
                     </RadioButton>
 
-                    <RadioButton GroupName="gitignore" IsChecked="{Binding Context.GitignoreTemplate, Converter={StaticResource EqualConv}, ConverterParameter=Angular}" Margin="0,0,0,0" Cursor="Hand">
+                    <RadioButton GroupName="gitignore" IsChecked="{Binding Context.GitignoreTemplate, Converter={StaticResource EqualConv}, ConverterParameter=Angular}" Margin="0,0,8,0" Cursor="Hand">
                         <RadioButton.Template>
                             <ControlTemplate TargetType="RadioButton">
                                 <Border x:Name="card" CornerRadius="10" Padding="16" BorderThickness="2"
@@ -102,6 +102,32 @@
                                         <TextBlock Text="WEB" FontSize="32" FontWeight="Bold" Foreground="#FFEF4444"/>
                                         <TextBlock Text="Angular / React / Node" FontSize="12" Foreground="{StaticResource Text1Brush}" Margin="0,4,0,4"/>
                                         <TextBlock Text="gitignore-angular" FontFamily="{StaticResource MonoFont}" FontSize="10" Foreground="{StaticResource Text3Brush}"
+                                                   Background="{StaticResource Bg0Brush}" Padding="4,2"/>
+                                    </StackPanel>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsChecked" Value="True">
+                                        <Setter TargetName="card" Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                        <Setter TargetName="card" Property="Background">
+                                            <Setter.Value>
+                                                <SolidColorBrush Color="#18FF6B35"/>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </RadioButton.Template>
+                    </RadioButton>
+
+                    <RadioButton GroupName="gitignore" IsChecked="{Binding Context.GitignoreTemplate, Converter={StaticResource EqualConv}, ConverterParameter=Python}" Margin="0,0,0,0" Cursor="Hand">
+                        <RadioButton.Template>
+                            <ControlTemplate TargetType="RadioButton">
+                                <Border x:Name="card" CornerRadius="10" Padding="16" BorderThickness="2"
+                                        BorderBrush="{StaticResource BorderBrush}" Background="{StaticResource Bg2Brush}">
+                                    <StackPanel>
+                                        <TextBlock Text="PY" FontSize="32" FontWeight="Bold" Foreground="#FF3776AB"/>
+                                        <TextBlock Text="Python / Django / Flask" FontSize="12" Foreground="{StaticResource Text1Brush}" Margin="0,4,0,4"/>
+                                        <TextBlock Text="gitignore-python" FontFamily="{StaticResource MonoFont}" FontSize="10" Foreground="{StaticResource Text3Brush}"
                                                    Background="{StaticResource Bg0Brush}" Padding="4,2"/>
                                     </StackPanel>
                                 </Border>
