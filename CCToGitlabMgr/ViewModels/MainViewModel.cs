@@ -43,6 +43,10 @@ namespace CCToGitlabMgr.ViewModels
                     OnPropertyChanged(nameof(CanGoBack));
                     OnPropertyChanged(nameof(CanGoForward));
                     OnPropertyChanged(nameof(StepProgress));
+
+                    // Auto-refresh branch list when entering Daily Work step
+                    if (value == 8 && DailyWorkingDirIsReady)
+                        _ = RefreshBranchListAsync();
                 }
             }
         }
@@ -141,6 +145,18 @@ namespace CCToGitlabMgr.ViewModels
         private string _newBranchName = "";
         public string NewBranchName { get => _newBranchName; set => SetProperty(ref _newBranchName, value); }
 
+        private string _switchBranchName = "";
+        public string SwitchBranchName { get => _switchBranchName; set => SetProperty(ref _switchBranchName, value); }
+
+        private string _deleteBranchName = "";
+        public string DeleteBranchName { get => _deleteBranchName; set => SetProperty(ref _deleteBranchName, value); }
+
+        private ObservableCollection<string> _availableBranches = new ObservableCollection<string>();
+        public ObservableCollection<string> AvailableBranches { get => _availableBranches; set => SetProperty(ref _availableBranches, value); }
+
+        private string _currentBranchName = "";
+        public string CurrentBranchName { get => _currentBranchName; set => SetProperty(ref _currentBranchName, value); }
+
         private string _stashMessage = "";
         public string StashMessage { get => _stashMessage; set => SetProperty(ref _stashMessage, value); }
 
@@ -198,8 +214,21 @@ namespace CCToGitlabMgr.ViewModels
         public AsyncRelayCommand DailyCreateBranchCommand { get; private set; }
         public AsyncRelayCommand DailyListBranchesCommand { get; private set; }
         public AsyncRelayCommand DailySwitchMainCommand { get; private set; }
+        public AsyncRelayCommand DailyGraphCommand { get; private set; }
+        public AsyncRelayCommand DailySwitchBranchCommand { get; private set; }
+        public AsyncRelayCommand DailyDeleteBranchCommand { get; private set; }
+        public AsyncRelayCommand DailyFetchCommand { get; private set; }
+        public AsyncRelayCommand DailyDiscardCommand { get; private set; }
+        public AsyncRelayCommand DailyUnstageCommand { get; private set; }
+        public AsyncRelayCommand DailyUndoCommitCommand { get; private set; }
+        public AsyncRelayCommand DailyAmendCommitCommand { get; private set; }
         public AsyncRelayCommand DailyStashCommand { get; private set; }
         public AsyncRelayCommand DailyStashPopCommand { get; private set; }
+        public AsyncRelayCommand DailyStashListCommand { get; private set; }
+        public AsyncRelayCommand RefreshBranchListCommand { get; private set; }
+
+        // Help
+        public RelayCommand ShowHelpCommand { get; private set; }
 
         // Project management
         public RelayCommand NewProjectCommand { get; private set; }
@@ -225,8 +254,10 @@ namespace CCToGitlabMgr.ViewModels
             _ = CheckGitAsync();
 
             // Dirty tracking
-            Context.PropertyChanged += (s, e) => { IsDirty = true; };
+            Context.PropertyChanged += (s, e) => { if (!_suppressDirty) IsDirty = true; };
         }
+
+        private bool _suppressDirty;
 
         private void InitializeSteps()
         {
@@ -324,8 +355,26 @@ namespace CCToGitlabMgr.ViewModels
             DailyCreateBranchCommand = new AsyncRelayCommand(DailyCreateBranchAsync, () => !IsBusy);
             DailyListBranchesCommand = new AsyncRelayCommand(DailyListBranchesAsync, () => !IsBusy);
             DailySwitchMainCommand = new AsyncRelayCommand(DailySwitchMainAsync, () => !IsBusy);
+            DailyGraphCommand = new AsyncRelayCommand(DailyGraphAsync, () => !IsBusy);
+            DailySwitchBranchCommand = new AsyncRelayCommand(DailySwitchBranchAsync, () => !IsBusy);
+            DailyDeleteBranchCommand = new AsyncRelayCommand(DailyDeleteBranchAsync, () => !IsBusy);
+            DailyFetchCommand = new AsyncRelayCommand(DailyFetchAsync, () => !IsBusy);
+            DailyDiscardCommand = new AsyncRelayCommand(DailyDiscardAsync, () => !IsBusy);
+            DailyUnstageCommand = new AsyncRelayCommand(DailyUnstageAsync, () => !IsBusy);
+            DailyUndoCommitCommand = new AsyncRelayCommand(DailyUndoCommitAsync, () => !IsBusy);
+            DailyAmendCommitCommand = new AsyncRelayCommand(DailyAmendCommitAsync, () => !IsBusy);
             DailyStashCommand = new AsyncRelayCommand(DailyStashAsync, () => !IsBusy);
             DailyStashPopCommand = new AsyncRelayCommand(DailyStashPopAsync, () => !IsBusy);
+            DailyStashListCommand = new AsyncRelayCommand(DailyStashListAsync, () => !IsBusy);
+            RefreshBranchListCommand = new AsyncRelayCommand(RefreshBranchListAsync, () => !IsBusy);
+
+            // Help
+            ShowHelpCommand = new RelayCommand(() =>
+            {
+                // Map current step to help chapter: 0=intro, 1-9=steps, 10=branches, 11=tags, 12=glossary
+                var chapterIndex = _currentStepIndex + 1; // step 0 → chapter 1 (step1)
+                Views.StyledDialog.ShowHelpViewer(chapterIndex);
+            });
 
             // Project management
             NewProjectCommand = new RelayCommand(NewProject);
@@ -358,7 +407,11 @@ namespace CCToGitlabMgr.ViewModels
                     break;
                 case 4: // GitLab — complete if remote URL filled
                     if (!string.IsNullOrWhiteSpace(Context.RemoteUrl))
+                    {
                         step.Status = "Completed";
+                        AutoCheckItem("pre", "GitLab credentials configured");
+                        AutoCheckItem("pre", "Empty GitLab project created");
+                    }
                     break;
                 case 7: // Checklist — complete if all items checked
                     if (Context.ChecklistItems != null && Context.ChecklistItems.Count > 0 &&
@@ -368,11 +421,88 @@ namespace CCToGitlabMgr.ViewModels
             }
         }
 
+        // === Checklist Auto-Check ===
+
+        /// <summary>
+        /// Automatically marks a checklist item as done by matching phase and text.
+        /// </summary>
+        private void AutoCheckItem(string phase, string text)
+        {
+            if (Context.ChecklistItems == null) return;
+            var item = Context.ChecklistItems.FirstOrDefault(c =>
+                c.Phase == phase && c.Text == text && !c.IsDone);
+            if (item != null)
+            {
+                item.IsDone = true;
+                if (!_suppressDirty) IsDirty = true;
+            }
+        }
+
+        /// <summary>
+        /// Re-evaluates all detectable checklist items based on current project state.
+        /// Called after loading a project and after startup.
+        /// </summary>
+        private void RefreshChecklistFromState()
+        {
+            // Pre-migration checks
+            if (GitVersion != null && !GitVersion.Contains("not found"))
+                AutoCheckItem("pre", "Git for Windows installed");
+
+            if (Steps[0].Status == "Completed")
+                AutoCheckItem("pre", "Global git config applied");
+
+            if (!string.IsNullOrWhiteSpace(Context.VsVersion))
+                AutoCheckItem("pre", "VS version identified");
+
+            if (!string.IsNullOrWhiteSpace(Context.RemoteUrl))
+            {
+                AutoCheckItem("pre", "GitLab credentials configured");
+                AutoCheckItem("pre", "Empty GitLab project created");
+            }
+
+            // During-migration checks
+            if (Steps[1].Status == "Completed")
+                AutoCheckItem("during", "Code copied to staging");
+
+            if (Context.ClearCaseFilesRemoved > 0 || Steps[2].Status == "Completed")
+                AutoCheckItem("during", "ClearCase artifacts cleaned");
+
+            if (Context.BuildArtifactsRemoved > 0 || Steps[2].Status == "Completed")
+                AutoCheckItem("during", "Build artifacts cleaned");
+
+            if (!string.IsNullOrWhiteSpace(Context.ProjectSizeAfter))
+            {
+                // Parse size — if it contains "MB" or "KB" it's under 1GB
+                var sizeText = Context.ProjectSizeAfter.ToUpperInvariant();
+                if (sizeText.Contains("KB") || sizeText.Contains("MB") ||
+                    (sizeText.Contains("GB") && double.TryParse(
+                        sizeText.Replace("GB", "").Trim(), out double gb) && gb < 1.0))
+                    AutoCheckItem("during", "Project size under 1GB");
+            }
+
+            if (Steps[3].Status == "Completed")
+                AutoCheckItem("during", ".gitignore placed at root");
+
+            if (Steps[5].Status == "Completed")
+            {
+                AutoCheckItem("during", "First commit done");
+                AutoCheckItem("during", "Push to GitLab succeeded");
+            }
+
+            // Post-migration checks
+            if (Steps[6].Status == "Completed")
+                AutoCheckItem("post", "Fresh clone done");
+        }
+
         // === Command Implementations ===
 
         private async Task CheckGitAsync()
         {
             GitVersion = await Git.GetVersionAsync() ?? "Git not found!";
+            _suppressDirty = true;
+            RefreshChecklistFromState();
+            _suppressDirty = false;
+            IsDirty = false;
         }
 
         private async Task ApplyGitConfigAsync()
@@ -392,6 +522,7 @@ namespace CCToGitlabMgr.ViewModels
                 await Git.ApplyRecommendedConfigAsync(Context.UserName, Context.UserEmail, _cts.Token);
                 var result = await Git.GetGlobalConfigAsync(_cts.Token);
                 Steps[0].Status = "Completed";
+                AutoCheckItem("pre", "Global git config applied");
                 AppendOutput("Git configuration applied successfully.");
             }
             catch (Exception ex)
@@ -457,6 +588,9 @@ namespace CCToGitlabMgr.ViewModels
                     Context.ProjectName = Path.GetFileName(Context.StagingPath);
 
                 Steps[1].Status = "Completed";
+                AutoCheckItem("during", "Code copied to staging");
+                if (!string.IsNullOrWhiteSpace(Context.VsVersion))
+                    AutoCheckItem("pre", "VS version identified");
                 AppendOutput("Copy complete.");
             }
             catch (Exception ex)
@@ -519,6 +653,7 @@ namespace CCToGitlabMgr.ViewModels
             {
                 var result = await Cleanup.CleanClearCaseArtifactsAsync(path, _cts.Token);
                 Context.ClearCaseFilesRemoved = result.FilesRemoved + result.DirectoriesRemoved;
+                AutoCheckItem("during", "ClearCase artifacts cleaned");
                 AppendOutput($"Freed: {FileCleanupService.FormatSize(result.BytesFreed)}");
                 if (result.Errors.Count > 0)
                 {
@@ -599,6 +734,10 @@ namespace CCToGitlabMgr.ViewModels
 
                 AppendOutput($"Freed: {FileCleanupService.FormatSize(result.BytesFreed)}");
                 AppendOutput($"Project size: {Context.ProjectSizeAfter}");
+
+                AutoCheckItem("during", "Build artifacts cleaned");
+                if (sizeAfter < 1_073_741_824) // < 1GB
+                    AutoCheckItem("during", "Project size under 1GB");
 
                 Steps[2].Status = "Completed";
             }
@@ -694,6 +833,7 @@ namespace CCToGitlabMgr.ViewModels
                     AppendOutput($"Added {preservedItems.Count} preserve exceptions to .gitignore.");
                 }
 
+                AutoCheckItem("during", ".gitignore placed at root");
                 Steps[3].Status = "Completed";
             }
             catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
@@ -795,6 +935,11 @@ namespace CCToGitlabMgr.ViewModels
             try
             {
                 var success = await Git.RunMigrationAsync(path, message, Context.RemoteUrl, Context.DefaultBranch, _cts.Token);
+                if (success)
+                {
+                    AutoCheckItem("during", "First commit done");
+                    AutoCheckItem("during", "Push to GitLab succeeded");
+                }
                 Steps[5].Status = success ? "Completed" : "Error";
             }
             catch (Exception ex)
@@ -845,6 +990,7 @@ namespace CCToGitlabMgr.ViewModels
                         AppendOutput($"Files in repo: {files.Length}");
                     }
 
+                    AutoCheckItem("post", "Fresh clone done");
                     Steps[6].Status = "Completed";
                     AppendOutput("\nVerification complete. Open the .sln in Visual Studio and run Build.");
                 }
@@ -1188,6 +1334,7 @@ namespace CCToGitlabMgr.ViewModels
                     OnPropertyChanged(nameof(DailyWorkingDirIsReady));
                     AppendOutput($"Clone successful to: {targetDir}");
                     await Git.LogAsync(targetDir, 5, _cts.Token);
+                    await RefreshBranchListAsync();
                 }
                 else
                 {
@@ -1486,6 +1633,7 @@ namespace CCToGitlabMgr.ViewModels
                 {
                     AppendOutput($"Switched to new branch '{NewBranchName}'.");
                     NewBranchName = "";
+                    await RefreshBranchListAsync();
                 }
                 else
                     AppendOutput($"Failed: {result.Error}");
@@ -1501,7 +1649,102 @@ namespace CCToGitlabMgr.ViewModels
 
             IsBusy = true;
             _cts = new CancellationTokenSource();
-            try { await Git.BranchListAsync(path, _cts.Token); }
+            try
+            {
+                var result = await Git.BranchListAsync(path, _cts.Token);
+                if (result.Success)
+                    Views.StyledDialog.ShowBranchesViewer(result.Output ?? "");
+                else
+                    AppendOutput($"Failed: {result.Error}");
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        private async Task RefreshBranchListAsync()
+        {
+            var path = GetDailyWorkingDir();
+            if (path == null) return;
+
+            try
+            {
+                // Get current branch
+                var curResult = await Git.GetCurrentBranchAsync(path);
+                if (curResult.Success)
+                    CurrentBranchName = curResult.Output?.Trim() ?? "";
+
+                var result = await Git.BranchListAsync(path);
+                if (!result.Success) return;
+
+                var branches = new List<string>();
+                foreach (var line in (result.Output ?? "").Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    var name = line.Trim().TrimStart('*').Trim();
+                    // Skip HEAD pointer entries like "remotes/origin/HEAD -> origin/main"
+                    if (name.Contains("->")) continue;
+                    if (!string.IsNullOrWhiteSpace(name) && !branches.Contains(name))
+                        branches.Add(name);
+                }
+
+                AvailableBranches.Clear();
+                foreach (var b in branches)
+                    AvailableBranches.Add(b);
+            }
+            catch { /* silent — just a refresh */ }
+        }
+
+        private async Task DailyGraphAsync()
+        {
+            var path = GetDailyWorkingDir();
+            if (path == null) { AppendOutput("ERROR: No git repository found. Set the Working Directory in the card above and Clone from GitLab."); return; }
+
+            IsBusy = true;
+            BusyMessage = "Loading graph...";
+            _cts = new CancellationTokenSource();
+            try
+            {
+                var structuredResult = await Git.LogStructuredAsync(path, 50, _cts.Token);
+                var graphResult = await Git.LogGraphAsync(path, 50, _cts.Token);
+                if (structuredResult.Success)
+                {
+                    // Capture path for closures
+                    var workDir = path;
+                    string checkoutBranch = null;
+                    string diffA = null, diffB = null;
+
+                    Views.StyledDialog.ShowGraphViewer(
+                        structuredResult.Output ?? "",
+                        graphResult.Output ?? "",
+                        onCheckout: branch => { checkoutBranch = branch; },
+                        onDiff: (a, b) => { diffA = a; diffB = b; }
+                    );
+
+                    // Handle actions after dialog closes
+                    if (checkoutBranch != null)
+                    {
+                        var result = await Git.CheckoutAsync(workDir, checkoutBranch, false, _cts.Token);
+                        if (result.Success)
+                        {
+                            AppendOutput($"Switched to '{checkoutBranch}'.");
+                            await RefreshBranchListAsync();
+                        }
+                        else
+                            AppendOutput($"Switch failed: {result.Error}");
+                    }
+                    else if (diffA != null && diffB != null)
+                    {
+                        BusyMessage = "Computing diff...";
+                        var statResult = await Git.DiffCommitsAsync(workDir, diffA, diffB, _cts.Token);
+                        var fullResult = await Git.DiffCommitsFullAsync(workDir, diffA, diffB, _cts.Token);
+                        Views.StyledDialog.ShowDiffViewer(
+                            diffA, diffB,
+                            statResult.Success ? statResult.Output : "",
+                            fullResult.Success ? fullResult.Output : "");
+                    }
+                }
+                else
+                    AppendOutput($"Failed: {structuredResult.Error}");
+            }
             catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
             finally { IsBusy = false; }
         }
@@ -1558,6 +1801,247 @@ namespace CCToGitlabMgr.ViewModels
             {
                 var result = await Git.StashPopAsync(path, _cts.Token);
                 AppendOutput(result.Success ? "Stash restored." : $"Stash pop failed: {result.Error}");
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        // === Fetch ===
+
+        private async Task DailyFetchAsync()
+        {
+            var path = GetDailyWorkingDir();
+            if (path == null) { AppendOutput("ERROR: No git repository found."); return; }
+
+            IsBusy = true;
+            BusyMessage = "Fetching from remote...";
+            _cts = new CancellationTokenSource();
+            try
+            {
+                var result = await Git.FetchAsync(path, _cts.Token);
+                if (result.Success)
+                {
+                    AppendOutput("Fetch completed. Use Pull to merge remote changes.");
+                    await RefreshBranchListAsync();
+                }
+                else
+                    AppendOutput($"Fetch failed: {result.Error}");
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        // === Switch Branch ===
+
+        private async Task DailySwitchBranchAsync()
+        {
+            var path = GetDailyWorkingDir();
+            if (path == null) { AppendOutput("ERROR: No git repository found."); return; }
+            if (string.IsNullOrWhiteSpace(SwitchBranchName))
+            {
+                AppendOutput("ERROR: Enter a branch name to switch to.");
+                return;
+            }
+
+            IsBusy = true;
+            BusyMessage = $"Switching to {SwitchBranchName}...";
+            _cts = new CancellationTokenSource();
+            try
+            {
+                // Handle remote branch names — strip "remotes/origin/" prefix for checkout
+                var branchToSwitch = SwitchBranchName;
+                if (branchToSwitch.StartsWith("remotes/"))
+                    branchToSwitch = branchToSwitch.Substring(branchToSwitch.IndexOf('/', 8) + 1);
+
+                var result = await Git.CheckoutAsync(path, branchToSwitch, false, _cts.Token);
+                if (result.Success)
+                {
+                    AppendOutput($"Switched to '{branchToSwitch}'.");
+                    SwitchBranchName = "";
+                    await RefreshBranchListAsync();
+                }
+                else
+                    AppendOutput($"Failed: {result.Error}");
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        // === Delete Branch ===
+
+        private async Task DailyDeleteBranchAsync()
+        {
+            var path = GetDailyWorkingDir();
+            if (path == null) { AppendOutput("ERROR: No git repository found."); return; }
+            if (string.IsNullOrWhiteSpace(DeleteBranchName))
+            {
+                AppendOutput("ERROR: Enter a branch name to delete.");
+                return;
+            }
+
+            var answer = Views.StyledDialog.ShowConfirm(
+                "Delete Branch",
+                $"Delete branch '{DeleteBranchName}'?",
+                "This will delete the local branch. Remote branch will not be affected.",
+                new[] { "Yes — Delete", "Cancel" },
+                Views.StyledDialog.DialogIcon.Warning,
+                MessageBoxButton.YesNo);
+
+            if (answer != MessageBoxResult.Yes) return;
+
+            IsBusy = true;
+            BusyMessage = $"Deleting {DeleteBranchName}...";
+            _cts = new CancellationTokenSource();
+            try
+            {
+                var result = await Git.DeleteBranchAsync(path, DeleteBranchName, _cts.Token);
+                if (result.Success)
+                {
+                    AppendOutput($"Branch '{DeleteBranchName}' deleted.");
+                    DeleteBranchName = "";
+                    await RefreshBranchListAsync();
+                }
+                else
+                    AppendOutput($"Failed: {result.Error}");
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        // === Undo Operations ===
+
+        private async Task DailyDiscardAsync()
+        {
+            var path = GetDailyWorkingDir();
+            if (path == null) { AppendOutput("ERROR: No git repository found."); return; }
+
+            var answer = Views.StyledDialog.ShowConfirm(
+                "Discard All Changes",
+                "Discard all uncommitted changes?",
+                "This will permanently revert all modified files to the last commit.\nThis action cannot be undone!",
+                new[] { "Yes — Discard everything", "Cancel" },
+                Views.StyledDialog.DialogIcon.Danger,
+                MessageBoxButton.YesNo);
+
+            if (answer != MessageBoxResult.Yes) return;
+
+            IsBusy = true;
+            BusyMessage = "Discarding changes...";
+            _cts = new CancellationTokenSource();
+            try
+            {
+                var result = await Git.DiscardAllChangesAsync(path, _cts.Token);
+                AppendOutput(result.Success ? "All changes discarded. Working directory is clean." : $"Failed: {result.Error}");
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        private async Task DailyUnstageAsync()
+        {
+            var path = GetDailyWorkingDir();
+            if (path == null) { AppendOutput("ERROR: No git repository found."); return; }
+
+            IsBusy = true;
+            BusyMessage = "Unstaging files...";
+            _cts = new CancellationTokenSource();
+            try
+            {
+                var result = await Git.UnstageAllAsync(path, _cts.Token);
+                AppendOutput(result.Success ? "All files unstaged. Changes are preserved but not staged for commit." : $"Failed: {result.Error}");
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        private async Task DailyUndoCommitAsync()
+        {
+            var path = GetDailyWorkingDir();
+            if (path == null) { AppendOutput("ERROR: No git repository found."); return; }
+
+            var answer = Views.StyledDialog.ShowConfirm(
+                "Undo Last Commit",
+                "Undo the last commit?",
+                "The commit will be removed but your files will remain as they are.\nThe changes will be staged and ready to commit again.",
+                new[] { "Yes — Undo commit", "Cancel" },
+                Views.StyledDialog.DialogIcon.Warning,
+                MessageBoxButton.YesNo);
+
+            if (answer != MessageBoxResult.Yes) return;
+
+            IsBusy = true;
+            BusyMessage = "Undoing last commit...";
+            _cts = new CancellationTokenSource();
+            try
+            {
+                var result = await Git.UndoLastCommitAsync(path, _cts.Token);
+                AppendOutput(result.Success ? "Last commit undone. Changes are staged and ready to commit." : $"Failed: {result.Error}");
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        private async Task DailyAmendCommitAsync()
+        {
+            var path = GetDailyWorkingDir();
+            if (path == null) { AppendOutput("ERROR: No git repository found."); return; }
+            if (string.IsNullOrWhiteSpace(DailyCommitMessage))
+            {
+                AppendOutput("ERROR: Write the corrected commit message first.");
+                return;
+            }
+
+            var answer = Views.StyledDialog.ShowConfirm(
+                "Amend Last Commit",
+                "Amend the last commit?",
+                "This replaces the last commit message and adds any newly staged changes.\nDo NOT amend commits that have already been pushed!",
+                new[] { "Yes — Amend", "Cancel" },
+                Views.StyledDialog.DialogIcon.Warning,
+                MessageBoxButton.YesNo);
+
+            if (answer != MessageBoxResult.Yes) return;
+
+            IsBusy = true;
+            BusyMessage = "Amending commit...";
+            _cts = new CancellationTokenSource();
+            try
+            {
+                await Git.AddAllAsync(path, _cts.Token);
+                var result = await Git.AmendCommitAsync(path, DailyCommitMessage, _cts.Token);
+                if (result.Success)
+                {
+                    AppendOutput("Last commit amended successfully.");
+                    DailyCommitMessage = "";
+                }
+                else
+                    AppendOutput($"Failed: {result.Error}");
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        // === Stash List ===
+
+        private async Task DailyStashListAsync()
+        {
+            var path = GetDailyWorkingDir();
+            if (path == null) { AppendOutput("ERROR: No git repository found."); return; }
+
+            IsBusy = true;
+            _cts = new CancellationTokenSource();
+            try
+            {
+                var result = await Git.StashListAsync(path, _cts.Token);
+                if (result.Success)
+                {
+                    var output = result.Output?.Trim();
+                    if (string.IsNullOrEmpty(output))
+                        AppendOutput("Stash is empty — no saved changes.");
+                    else
+                        Views.StyledDialog.ShowStashViewer(output);
+                }
+                else
+                    AppendOutput($"Failed: {result.Error}");
             }
             catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
             finally { IsBusy = false; }
@@ -1946,6 +2430,11 @@ namespace CCToGitlabMgr.ViewModels
 
             CurrentStepIndex = data.CurrentStepIndex;
             ConsoleOutput = "";
+
+            // Re-evaluate auto-checkable items based on restored state
+            _suppressDirty = true;
+            RefreshChecklistFromState();
+            _suppressDirty = false;
             IsDirty = false;
         }
 

@@ -173,6 +173,22 @@ namespace CCToGitlabMgr.Services
                 workingDir, ct);
         }
 
+        public async Task<CommandResult> LogGraphAsync(string workingDir, int count = 40, CancellationToken ct = default)
+        {
+            Output?.Invoke($"> git log --graph --all --oneline --decorate -{count}");
+            return await _runner.RunGitAsync(
+                $"log --graph --all --oneline --decorate -{count}",
+                workingDir, ct);
+        }
+
+        public async Task<CommandResult> LogStructuredAsync(string workingDir, int count = 50, CancellationToken ct = default)
+        {
+            // Format: hash|parents|refs|subject
+            return await _runner.RunGitAsync(
+                $"log --all -{count} --pretty=format:\"%h|%p|%D|%s\"",
+                workingDir, ct);
+        }
+
         // === Tags ===
 
         public async Task<CommandResult> CreateTagAsync(string workingDir, string tagName, string message = null, CancellationToken ct = default)
@@ -226,6 +242,54 @@ namespace CCToGitlabMgr.Services
             return await _runner.RunGitAsync($"show \"{tagName}\" --no-patch", workingDir, ct);
         }
 
+        // === Branch Management ===
+
+        public async Task<CommandResult> DeleteBranchAsync(string workingDir, string branchName, CancellationToken ct = default)
+        {
+            Output?.Invoke($"> git branch -d {branchName}");
+            return await _runner.RunGitAsync($"branch -d \"{branchName}\"", workingDir, ct);
+        }
+
+        public async Task<CommandResult> GetCurrentBranchAsync(string workingDir, CancellationToken ct = default)
+        {
+            return await _runner.RunGitAsync("rev-parse --abbrev-ref HEAD", workingDir, ct);
+        }
+
+        // === Fetch ===
+
+        public async Task<CommandResult> FetchAsync(string workingDir, CancellationToken ct = default)
+        {
+            Output?.Invoke("> git fetch --all");
+            return await _runner.RunGitAsync("fetch --all", workingDir, ct);
+        }
+
+        // === Undo Operations ===
+
+        public async Task<CommandResult> DiscardAllChangesAsync(string workingDir, CancellationToken ct = default)
+        {
+            Output?.Invoke("> git checkout -- .");
+            return await _runner.RunGitAsync("checkout -- .", workingDir, ct);
+        }
+
+        public async Task<CommandResult> UnstageAllAsync(string workingDir, CancellationToken ct = default)
+        {
+            Output?.Invoke("> git reset HEAD");
+            return await _runner.RunGitAsync("reset HEAD", workingDir, ct);
+        }
+
+        public async Task<CommandResult> UndoLastCommitAsync(string workingDir, CancellationToken ct = default)
+        {
+            Output?.Invoke("> git reset --soft HEAD~1");
+            return await _runner.RunGitAsync("reset --soft HEAD~1", workingDir, ct);
+        }
+
+        public async Task<CommandResult> AmendCommitAsync(string workingDir, string message, CancellationToken ct = default)
+        {
+            Output?.Invoke($"> git commit --amend -m \"{TruncateForDisplay(message)}\"");
+            var escapedMessage = message.Replace("\"", "\\\"");
+            return await _runner.RunGitAsync($"commit --amend -m \"{escapedMessage}\"", workingDir, ct);
+        }
+
         // === Stash ===
 
         public async Task<CommandResult> StashAsync(string workingDir, string message = null, CancellationToken ct = default)
@@ -241,6 +305,12 @@ namespace CCToGitlabMgr.Services
             return await _runner.RunGitAsync("stash pop", workingDir, ct);
         }
 
+        public async Task<CommandResult> StashListAsync(string workingDir, CancellationToken ct = default)
+        {
+            Output?.Invoke("> git stash list");
+            return await _runner.RunGitAsync("stash list", workingDir, ct);
+        }
+
         // === Diff ===
 
         public async Task<CommandResult> DiffAsync(string workingDir, bool staged = false, CancellationToken ct = default)
@@ -248,6 +318,18 @@ namespace CCToGitlabMgr.Services
             var flag = staged ? " --staged" : "";
             Output?.Invoke($"> git diff{flag}");
             return await _runner.RunGitAsync($"diff{flag}", workingDir, ct);
+        }
+
+        public async Task<CommandResult> DiffCommitsAsync(string workingDir, string hashA, string hashB, CancellationToken ct = default)
+        {
+            Output?.Invoke($"> git diff {hashA} {hashB} --stat");
+            return await _runner.RunGitAsync($"diff {hashA} {hashB} --stat", workingDir, ct);
+        }
+
+        public async Task<CommandResult> DiffCommitsFullAsync(string workingDir, string hashA, string hashB, CancellationToken ct = default)
+        {
+            Output?.Invoke($"> git diff {hashA} {hashB}");
+            return await _runner.RunGitAsync($"diff {hashA} {hashB}", workingDir, ct);
         }
 
         // === SSH Key ===

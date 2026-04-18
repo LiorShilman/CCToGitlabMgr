@@ -26,12 +26,18 @@
                 <!-- Status indicator -->
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                     <TextBlock Text="Status: " Foreground="{StaticResource Text2Brush}" FontSize="13" VerticalAlignment="Center"/>
-                    <!-- Ready = green -->
                     <TextBlock Text="&#x2713; Ready" Foreground="{StaticResource OkBrush}" FontSize="13" FontWeight="Bold"
                                Visibility="{Binding DailyWorkingDirIsReady, Converter={StaticResource BoolToVis}}"/>
-                    <!-- Not ready = warning -->
                     <TextBlock Text="{Binding DailyWorkingDirStatus, Mode=OneWay}" Foreground="{StaticResource WarnBrush}" FontSize="13" FontWeight="SemiBold"
                                Visibility="{Binding DailyWorkingDirIsReady, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"/>
+                </StackPanel>
+
+                <!-- Current branch display -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,12"
+                            Visibility="{Binding CurrentBranchName, Converter={StaticResource NullToVis}}">
+                    <TextBlock Text="&#x2387; Branch: " Foreground="{StaticResource Text2Brush}" FontSize="13" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding CurrentBranchName}" Foreground="#FF10B981" FontSize="13"
+                               FontWeight="Bold" FontFamily="{StaticResource MonoFont}" VerticalAlignment="Center"/>
                 </StackPanel>
 
                 <!-- Remote URL display -->
@@ -56,6 +62,8 @@
                 <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="13" Margin="0,0,0,14"
                            Text="Common Git operations on your working directory."/>
                 <WrapPanel>
+                    <Button Content="Fetch" Command="{Binding DailyFetchCommand}"
+                            Style="{StaticResource SecondaryButton}" Padding="14,8" Margin="0,0,8,8" FontSize="12"/>
                     <Button Content="Pull (Get Latest)" Command="{Binding DailyPullCommand}"
                             Style="{StaticResource AccentButton}" Padding="14,8" Margin="0,0,8,8" FontSize="12"/>
                     <Button Content="Push to GitLab" Command="{Binding DailyPushCommand}"
@@ -88,7 +96,9 @@
                     <Button Content="Stage All + Commit" Command="{Binding DailyCommitCommand}"
                             Style="{StaticResource AccentButton}" Padding="14,8" Margin="0,0,8,0" FontSize="12"/>
                     <Button Content="Stage All + Commit + Push" Command="{Binding DailyCommitPushCommand}"
-                            Style="{StaticResource AccentButton}" Padding="14,8" FontSize="12"/>
+                            Style="{StaticResource AccentButton}" Padding="14,8" Margin="0,0,8,0" FontSize="12"/>
+                    <Button Content="Amend Last Commit" Command="{Binding DailyAmendCommitCommand}"
+                            Style="{StaticResource SecondaryButton}" Padding="14,8" FontSize="12"/>
                 </StackPanel>
 
                 <TextBlock Foreground="{StaticResource Text3Brush}" FontSize="11" Margin="0,10,0,0" TextWrapping="Wrap">
@@ -98,10 +108,63 @@
             </StackPanel>
         </Border>
 
+        <!-- Undo / Reset -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Undo / Reset" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,8"/>
+                <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="13" Margin="0,0,0,14" TextWrapping="Wrap"
+                           Text="Undo operations to fix mistakes. Use with care — some actions cannot be reversed."/>
+
+                <WrapPanel>
+                    <Button Content="Unstage All" Command="{Binding DailyUnstageCommand}"
+                            Style="{StaticResource SecondaryButton}" Padding="14,8" Margin="0,0,8,8" FontSize="12"/>
+                    <Button Content="Undo Last Commit" Command="{Binding DailyUndoCommitCommand}"
+                            Style="{StaticResource SecondaryButton}" Padding="14,8" Margin="0,0,8,8" FontSize="12"/>
+                    <Button Content="Discard All Changes" Command="{Binding DailyDiscardCommand}"
+                            Style="{StaticResource DangerButton}" Padding="14,8" Margin="0,0,8,8" FontSize="12"/>
+                </WrapPanel>
+
+                <Border Background="#14EF4444" BorderBrush="#4DEF4444" BorderThickness="1" CornerRadius="6" Padding="14,10" Margin="0,8,0,0">
+                    <DockPanel>
+                        <TextBlock Text="!" FontWeight="Bold" Foreground="#FFEF4444" FontSize="16"
+                                   DockPanel.Dock="Left" Margin="0,0,12,0" VerticalAlignment="Top"/>
+                        <StackPanel>
+                            <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="12" TextWrapping="Wrap">
+                                <Run FontWeight="SemiBold">Unstage All</Run>
+                                <Run xml:space="preserve"> — removes files from Staging Area, changes preserved</Run>
+                            </TextBlock>
+                            <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="12" TextWrapping="Wrap">
+                                <Run FontWeight="SemiBold">Undo Last Commit</Run>
+                                <Run xml:space="preserve"> — removes the commit, files stay staged (soft reset)</Run>
+                            </TextBlock>
+                            <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="12" TextWrapping="Wrap">
+                                <Run FontWeight="SemiBold" Foreground="#FFEF4444">Discard All Changes</Run>
+                                <Run xml:space="preserve" Foreground="#FFEF4444"> — permanently deletes all uncommitted changes!</Run>
+                            </TextBlock>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+
         <!-- Branches -->
         <Border Style="{StaticResource CardBorder}">
             <StackPanel>
-                <TextBlock Text="Branches" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,8"/>
+                <DockPanel Margin="0,0,0,8">
+                    <TextBlock Text="Branches" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" VerticalAlignment="Center"/>
+                    <!-- Current branch indicator -->
+                    <Border DockPanel.Dock="Right" Background="#1410B981" BorderBrush="#4D10B981" BorderThickness="1"
+                            CornerRadius="14" Padding="14,6" HorizontalAlignment="Right"
+                            Visibility="{Binding CurrentBranchName, Converter={StaticResource NullToVis}}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#x2387;" Foreground="#FF10B981" FontSize="15" FontWeight="Bold"
+                                       VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Foreground="#FFADB5BD" FontSize="12" VerticalAlignment="Center" Margin="0,0,4,0" Text="ON"/>
+                            <TextBlock Text="{Binding CurrentBranchName}" Foreground="#FF10B981" FontSize="13"
+                                       FontWeight="Bold" FontFamily="{StaticResource MonoFont}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                </DockPanel>
                 <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="13" Margin="0,0,0,14"
                            Text="Create feature branches for isolated work, then merge back via GitLab Merge Requests."/>
 
@@ -114,8 +177,33 @@
                              FontFamily="{StaticResource MonoFont}"/>
                 </DockPanel>
 
+                <TextBlock Style="{StaticResource FieldLabel}" Text="Switch to Branch:"/>
+                <DockPanel Margin="0,0,0,12">
+                    <Button DockPanel.Dock="Right" Content="Switch" Command="{Binding DailySwitchBranchCommand}"
+                            Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" Padding="14,8" FontSize="12"/>
+                    <Button DockPanel.Dock="Right" Content="&#x21BB;" Command="{Binding RefreshBranchListCommand}"
+                            Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" Padding="8,8" FontSize="14"
+                            ToolTip="Refresh branch list"/>
+                    <ComboBox Style="{StaticResource DarkComboBox}"
+                              ItemsSource="{Binding AvailableBranches}"
+                              SelectedItem="{Binding SwitchBranchName, Mode=TwoWay}"
+                              FontFamily="{StaticResource MonoFont}" FontSize="12"/>
+                </DockPanel>
+
+                <TextBlock Style="{StaticResource FieldLabel}" Text="Delete Branch:"/>
+                <DockPanel Margin="0,0,0,12">
+                    <Button DockPanel.Dock="Right" Content="Delete" Command="{Binding DailyDeleteBranchCommand}"
+                            Style="{StaticResource DangerButton}" Margin="8,0,0,0" Padding="14,8" FontSize="12"/>
+                    <ComboBox Style="{StaticResource DarkComboBox}"
+                              ItemsSource="{Binding AvailableBranches}"
+                              SelectedItem="{Binding DeleteBranchName, Mode=TwoWay}"
+                              FontFamily="{StaticResource MonoFont}" FontSize="12"/>
+                </DockPanel>
+
                 <StackPanel Orientation="Horizontal">
                     <Button Content="List Branches" Command="{Binding DailyListBranchesCommand}"
+                            Style="{StaticResource SecondaryButton}" Padding="14,8" Margin="0,0,8,0" FontSize="12"/>
+                    <Button Content="Branch Graph" Command="{Binding DailyGraphCommand}"
                             Style="{StaticResource SecondaryButton}" Padding="14,8" Margin="0,0,8,0" FontSize="12"/>
                     <Button Content="Switch to main" Command="{Binding DailySwitchMainCommand}"
                             Style="{StaticResource SecondaryButton}" Padding="14,8" FontSize="12"/>
@@ -144,9 +232,12 @@
                              FontFamily="{StaticResource MonoFont}"/>
                 </DockPanel>
 
-                <Button Content="Stash Pop (Restore)" Command="{Binding DailyStashPopCommand}"
-                        Style="{StaticResource SecondaryButton}" Padding="14,8" FontSize="12"
-                        HorizontalAlignment="Left"/>
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="Stash Pop (Restore)" Command="{Binding DailyStashPopCommand}"
+                            Style="{StaticResource SecondaryButton}" Padding="14,8" Margin="0,0,8,0" FontSize="12"/>
+                    <Button Content="Stash List" Command="{Binding DailyStashListCommand}"
+                            Style="{StaticResource SecondaryButton}" Padding="14,8" FontSize="12"/>
+                </StackPanel>
             </StackPanel>
         </Border>
 

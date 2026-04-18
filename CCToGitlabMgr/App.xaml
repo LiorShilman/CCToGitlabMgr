@@ -12,6 +12,7 @@
             <conv:StepStatusToColorConverter x:Key="StatusToColor"/>
             <conv:EqualityConverter x:Key="EqualConv"/>
             <conv:InverseBoolConverter x:Key="InverseBool"/>
+            <conv:StringToVisibilityConverter x:Key="NullToVis"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>
