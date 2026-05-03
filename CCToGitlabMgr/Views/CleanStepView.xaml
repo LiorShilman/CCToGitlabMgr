@@ -46,6 +46,10 @@
                 <Button Content="Scan for Data Directories" Command="{Binding ScanPreservableCommand}"
                         Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,0,0,12"/>
 
+                <CheckBox Style="{StaticResource DarkCheckBox}" IsChecked="{Binding AllPreservedSelected, Mode=TwoWay}" Margin="0,0,0,8">
+                    <TextBlock Foreground="{StaticResource Text1Brush}" FontSize="13" Text="Select All / Unselect All"/>
+                </CheckBox>
+
                 <!-- List of found directories with checkboxes -->
                 <ItemsControl ItemsSource="{Binding Context.PreservedSubDirs}">
                     <ItemsControl.ItemTemplate>

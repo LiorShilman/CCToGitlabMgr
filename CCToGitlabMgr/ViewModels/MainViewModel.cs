@@ -64,6 +64,23 @@ namespace CCToGitlabMgr.ViewModels
         private string _busyMessage = "";
         public string BusyMessage { get => _busyMessage; set => SetProperty(ref _busyMessage, value); }
 
+        private double _copyProgress;
+        public double CopyProgress { get => _copyProgress; set => SetProperty(ref _copyProgress, value); }
+
+        private bool _isCopying;
+        public bool IsCopying { get => _isCopying; set => SetProperty(ref _isCopying, value); }
+
+        public bool AllPreservedSelected
+        {
+            get => Context.PreservedSubDirs.Count > 0 && Context.PreservedSubDirs.All(d => d.IsPreserved);
+            set
+            {
+                foreach (var item in Context.PreservedSubDirs)
+                    item.IsPreserved = value;
+                OnPropertyChanged(nameof(AllPreservedSelected));
+            }
+        }
+
         private string _gitVersion;
         public string GitVersion { get => _gitVersion; set => SetProperty(ref _gitVersion, value); }
 
@@ -560,7 +577,9 @@ namespace CCToGitlabMgr.ViewModels
             }
 
             IsBusy = true;
-            BusyMessage = "Copying to staging...";
+            IsCopying = true;
+            CopyProgress = 0;
+            BusyMessage = "Counting files...";
             _cts = new CancellationTokenSource();
 
             try
@@ -571,7 +590,16 @@ namespace CCToGitlabMgr.ViewModels
                 var sizeBefore = FileCleanupService.GetDirectorySize(Context.SourcePath);
                 Context.ProjectSizeBefore = FileCleanupService.FormatSize(sizeBefore);
 
-                await Task.Run(() => CopyDirectory(Context.SourcePath, Context.StagingPath), _cts.Token);
+                var totalFiles = await Task.Run(() => Directory.GetFiles(Context.SourcePath, "*", SearchOption.AllDirectories).Length);
+                BusyMessage = $"Copying {totalFiles} files...";
+
+                var progress = new Progress<int>(copied =>
+                {
+                    CopyProgress = totalFiles > 0 ? (double)copied / totalFiles * 100 : 0;
+                    BusyMessage = $"Copying... {copied}/{totalFiles} files";
+                });
+
+                await Task.Run(() => CopyDirectoryWithProgress(Context.SourcePath, Context.StagingPath, progress), _cts.Token);
 
                 // Auto-detect .sln
                 var slnPath = SlnParser.FindSln(Context.StagingPath);
@@ -601,6 +629,7 @@ namespace CCToGitlabMgr.ViewModels
                 AutoCheckItem("during", "Code copied to staging");
                 if (!string.IsNullOrWhiteSpace(Context.VsVersion))
                     AutoCheckItem("pre", "VS version identified");
+                CopyProgress = 100;
                 AppendOutput("Copy complete.");
             }
             catch (Exception ex)
@@ -611,6 +640,7 @@ namespace CCToGitlabMgr.ViewModels
             finally
             {
                 IsBusy = false;
+                IsCopying = false;
             }
         }
 
@@ -2120,6 +2150,34 @@ namespace CCToGitlabMgr.ViewModels
                 var destDir = Path.Combine(dest, Path.GetFileName(dir));
                 CopyDirectory(dir, destDir);
             }
+        }
+
+        private static void CopyDirectoryWithProgress(string source, string dest, IProgress<int> progress)
+        {
+            int copied = 0;
+            CopyDirRecursive(source, dest, progress, ref copied);
+        }
+
+        private static void CopyDirRecursive(string source, string dest, IProgress<int> progress, ref int copied)
+        {
+            Directory.CreateDirectory(dest);
+
+            foreach (var file in Directory.GetFiles(source))
+            {
+                var destFile = Path.Combine(dest, Path.GetFileName(file));
+                File.Copy(file, destFile, true);
+                copied++;
+                if (copied % 50 == 0)
+                    progress.Report(copied);
+            }
+
+            foreach (var dir in Directory.GetDirectories(source))
+            {
+                var destDir = Path.Combine(dest, Path.GetFileName(dir));
+                CopyDirRecursive(dir, destDir, progress, ref copied);
+            }
+
+            progress.Report(copied);
         }
 
         // === Project Management ===

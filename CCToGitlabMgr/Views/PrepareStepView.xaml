@@ -30,7 +30,15 @@
                 <TextBox Style="{StaticResource DarkTextBox}" Text="{Binding Context.ProjectName, UpdateSourceTrigger=PropertyChanged}" Width="300" HorizontalAlignment="Left" Margin="0,0,0,16"/>
 
                 <Button Content="Copy to Staging" Command="{Binding CopyToStagingCommand}"
-                        Style="{StaticResource AccentButton}" HorizontalAlignment="Left"/>
+                        Style="{StaticResource AccentButton}" HorizontalAlignment="Left" Margin="0,0,0,8"/>
+
+                <!-- Copy Progress Bar -->
+                <StackPanel Visibility="{Binding IsCopying, Converter={StaticResource BoolToVis}}">
+                    <ProgressBar Value="{Binding CopyProgress}" Minimum="0" Maximum="100" Height="18"
+                                 Foreground="{StaticResource AccentBrush}" Background="{StaticResource Bg0Brush}"
+                                 BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Margin="0,0,0,4"/>
+                    <TextBlock Text="{Binding BusyMessage}" Foreground="{StaticResource Text2Brush}" FontSize="12"/>
+                </StackPanel>
             </StackPanel>
         </Border>
 

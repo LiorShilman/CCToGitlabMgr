@@ -115,7 +115,7 @@
                             <Button Content="Delete"
                                     Style="{StaticResource DangerButton}" Padding="12,5" FontSize="11"
                                     Command="{Binding DeleteProjectCommand}"
-                                    CommandParameter="{Binding SelectedValue, ElementName=ProjectSelector}"/>
+                                    CommandParameter="{Binding CurrentProjectId}"/>
                         </StackPanel>
                     </DockPanel>
                 </Border>

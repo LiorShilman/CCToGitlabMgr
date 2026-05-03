@@ -24,7 +24,6 @@ namespace CCToGitlabMgr
             {
                 var vm = DataContext as MainViewModel;
                 vm?.LoadProjectCommand.Execute(info.ProjectId);
-                // Reset selection so user can re-select the same project
                 ProjectSelector.SelectedIndex = -1;
             }
         }
