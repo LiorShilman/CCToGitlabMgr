@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -104,6 +105,7 @@ namespace CCToGitlabMgr.ViewModels
         public ObservableCollection<ProjectInfo> SavedProjects { get => _savedProjects; set => SetProperty(ref _savedProjects, value); }
 
         // === Output Console ===
+        private readonly StringBuilder _consoleBuffer = new StringBuilder();
         private string _consoleOutput = "";
         public string ConsoleOutput { get => _consoleOutput; set => SetProperty(ref _consoleOutput, value); }
 
@@ -324,7 +326,7 @@ namespace CCToGitlabMgr.ViewModels
                     CurrentStepIndex = idx;
             });
 
-            ClearConsoleCommand = new RelayCommand(() => ConsoleOutput = "");
+            ClearConsoleCommand = new RelayCommand(() => { _consoleBuffer.Clear(); ConsoleOutput = ""; });
 
             // Step 1
             ApplyGitConfigCommand = new AsyncRelayCommand(ApplyGitConfigAsync, () => !IsBusy);
@@ -2093,10 +2095,11 @@ namespace CCToGitlabMgr.ViewModels
         {
             if (Application.Current?.Dispatcher?.CheckAccess() == false)
             {
-                Application.Current.Dispatcher.Invoke(() => AppendOutput(text));
+                Application.Current.Dispatcher.BeginInvoke(new Action(() => AppendOutput(text)));
                 return;
             }
-            ConsoleOutput += text + "\n";
+            _consoleBuffer.AppendLine(text);
+            ConsoleOutput = _consoleBuffer.ToString();
         }
 
         private void BrowseFolder(Action<string> setter)
@@ -2206,7 +2209,7 @@ namespace CCToGitlabMgr.ViewModels
             ResetToDefaults();
             CurrentProjectId = null;
             CurrentProjectName = "Untitled Project";
-            ConsoleOutput = "";
+            _consoleBuffer.Clear(); ConsoleOutput = "";
             foreach (var step in Steps) step.Status = "Pending";
             CurrentStepIndex = 0;
             IsDirty = false;
@@ -2499,7 +2502,7 @@ namespace CCToGitlabMgr.ViewModels
             }
 
             CurrentStepIndex = data.CurrentStepIndex;
-            ConsoleOutput = "";
+            _consoleBuffer.Clear(); ConsoleOutput = "";
 
             // Re-evaluate auto-checkable items based on restored state
             _suppressDirty = true;
