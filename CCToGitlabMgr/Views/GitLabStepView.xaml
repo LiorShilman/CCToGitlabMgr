@@ -99,5 +99,41 @@
                 </StackPanel>
             </DockPanel>
         </Border>
+
+        <!-- Version Tags -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,8">
+                    <Run Text="Version Tags — "/><Run Text="{Binding PlatformName, Mode=OneWay}"/><Run Text=" Releases"/>
+                </TextBlock>
+                <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,16"
+                           Text="Create a Git tag to mark a release version. Push tags to make them visible as Releases on the remote platform."/>
+
+                <TextBlock Style="{StaticResource FieldLabel}" Text="Tag Name:"/>
+                <TextBox Style="{StaticResource DarkTextBox}" Margin="0,0,0,12"
+                         Text="{Binding TagName, UpdateSourceTrigger=PropertyChanged}"
+                         FontFamily="{StaticResource MonoFont}"/>
+
+                <TextBlock Style="{StaticResource FieldLabel}" Text="Tag Message (optional):"/>
+                <TextBox Style="{StaticResource DarkTextBox}" Margin="0,0,0,16"
+                         Text="{Binding TagMessage, UpdateSourceTrigger=PropertyChanged}"
+                         FontFamily="{StaticResource MonoFont}"/>
+
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="Create Tag" Command="{Binding CreateTagCommand}"
+                            Style="{StaticResource AccentButton}" Padding="14,7" Margin="0,0,8,0" FontSize="12"/>
+                    <Button Content="Push Tags to Remote" Command="{Binding PushTagsCommand}"
+                            Style="{StaticResource SecondaryButton}" Padding="14,7" Margin="0,0,8,0" FontSize="12"
+                            BorderBrush="{StaticResource OkBrush}"/>
+                    <Button Content="List Tags" Command="{Binding ListTagsCommand}"
+                            Style="{StaticResource SecondaryButton}" Padding="14,7" FontSize="12"/>
+                </StackPanel>
+
+                <TextBlock Foreground="{StaticResource Text3Brush}" FontSize="11" Margin="0,12,0,0" TextWrapping="Wrap">
+                    <Run FontWeight="SemiBold">Tip:</Run>
+                    <Run xml:space="preserve"> Use semantic versioning — v1.0.0 for initial release, v1.0.1 for fixes, v1.1.0 for new features.</Run>
+                </TextBlock>
+            </StackPanel>
+        </Border>
     </StackPanel>
 </UserControl>

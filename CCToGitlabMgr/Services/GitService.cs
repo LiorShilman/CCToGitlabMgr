@@ -146,9 +146,20 @@ namespace CCToGitlabMgr.Services
 
         public async Task<CommandResult> CheckoutAsync(string workingDir, string branch, bool create = false, CancellationToken ct = default)
         {
-            var flag = create ? "-b " : "";
-            Output?.Invoke($"> git checkout {flag}{branch}");
-            return await _runner.RunGitAsync($"checkout {flag}{branch}", workingDir, ct);
+            if (create)
+            {
+                Output?.Invoke($"> git switch -c {branch}");
+                var r = await _runner.RunGitAsync($"switch -c {branch}", workingDir, ct);
+                if (!r.Success && (r.Error?.Contains("already exists") == true))
+                {
+                    Output?.Invoke($"Branch already exists — switching to it.");
+                    Output?.Invoke($"> git switch {branch}");
+                    return await _runner.RunGitAsync($"switch {branch}", workingDir, ct);
+                }
+                return r;
+            }
+            Output?.Invoke($"> git switch {branch}");
+            return await _runner.RunGitAsync($"switch {branch}", workingDir, ct);
         }
 
         public async Task<CommandResult> BranchListAsync(string workingDir, CancellationToken ct = default)
@@ -361,20 +372,20 @@ namespace CCToGitlabMgr.Services
             var result = await InitAsync(workingDir, ct);
             if (!result.Success) { Output?.Invoke("FAILED: git init"); return false; }
 
-            // 2. Branch
-            result = await SetBranchNameAsync(workingDir, branch, ct);
-            if (!result.Success) { Output?.Invoke("FAILED: branch rename"); return false; }
-
-            // 3. Add
+            // 2. Add
             result = await AddAllAsync(workingDir, ct);
             if (!result.Success) { Output?.Invoke("FAILED: git add"); return false; }
 
-            // 4. Status check
+            // 3. Status check
             await StatusAsync(workingDir, ct);
 
-            // 5. Commit
+            // 4. Commit
             result = await CommitAsync(workingDir, commitMessage, ct);
             if (!result.Success) { Output?.Invoke("FAILED: git commit"); return false; }
+
+            // 5. Rename branch to main (must be after first commit — branch doesn't exist before)
+            result = await SetBranchNameAsync(workingDir, branch, ct);
+            if (!result.Success) { Output?.Invoke("FAILED: branch rename"); return false; }
 
             // 6. Add remote
             result = await AddRemoteAsync(workingDir, remoteUrl, "origin", ct);

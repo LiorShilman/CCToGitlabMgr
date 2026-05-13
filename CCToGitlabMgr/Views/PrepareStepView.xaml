@@ -20,11 +20,16 @@
                 </DockPanel>
 
                 <TextBlock Style="{StaticResource FieldLabel}" Text="Staging Folder (working copy):"/>
-                <DockPanel Margin="0,0,0,12">
+                <DockPanel Margin="0,0,0,4">
                     <Button DockPanel.Dock="Right" Content="Browse..." Command="{Binding BrowseStagingCommand}"
                             Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" Padding="14,8"/>
                     <TextBox Style="{StaticResource DarkTextBox}" Text="{Binding Context.StagingPath, UpdateSourceTrigger=PropertyChanged}"/>
                 </DockPanel>
+                <TextBlock Foreground="{StaticResource Text3Brush}" FontSize="11" Margin="0,0,0,12" TextWrapping="Wrap">
+                    <Run FontWeight="SemiBold">Full path including project folder name.</Run>
+                    <Run xml:space="preserve">  Files are copied directly into this folder.  Example: </Run>
+                    <Run FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource AccentHiBrush}">C:\Work\MyProject_Staging</Run>
+                </TextBlock>
 
                 <TextBlock Style="{StaticResource FieldLabel}" Text="Project Name:"/>
                 <TextBox Style="{StaticResource DarkTextBox}" Text="{Binding Context.ProjectName, UpdateSourceTrigger=PropertyChanged}" Width="300" HorizontalAlignment="Left" Margin="0,0,0,16"/>

@@ -1481,8 +1481,9 @@ namespace CCToGitlabMgr.ViewModels
             _cts = new CancellationTokenSource();
             try
             {
-                var result = await Git.PushAsync(path, "origin", Context.DefaultBranch, false, _cts.Token);
-                AppendOutput(result.Success ? "Push complete." : $"Push failed: {result.Error}");
+                var branch = !string.IsNullOrEmpty(CurrentBranchName) ? CurrentBranchName : Context.DefaultBranch;
+                var result = await Git.PushAsync(path, "origin", branch, true, _cts.Token);
+                AppendOutput(result.Success ? $"Push complete (branch: {branch})." : $"Push failed: {result.Error}");
             }
             catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
             finally { IsBusy = false; }
@@ -1648,8 +1649,9 @@ namespace CCToGitlabMgr.ViewModels
                 AppendOutput("Commit successful. Pushing...");
                 DailyCommitMessage = "";
 
-                var pushResult = await Git.PushAsync(path, "origin", Context.DefaultBranch, false, _cts.Token);
-                AppendOutput(pushResult.Success ? "Push complete." : $"Push failed: {pushResult.Error}");
+                var branch = !string.IsNullOrEmpty(CurrentBranchName) ? CurrentBranchName : Context.DefaultBranch;
+                var pushResult = await Git.PushAsync(path, "origin", branch, true, _cts.Token);
+                AppendOutput(pushResult.Success ? $"Push complete (branch: {branch})." : $"Push failed: {pushResult.Error}");
             }
             catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
             finally { IsBusy = false; }

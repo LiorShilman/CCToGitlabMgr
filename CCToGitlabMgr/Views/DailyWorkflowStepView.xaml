@@ -16,12 +16,18 @@
                            Text="Choose the folder where you develop. Clone from the remote to a fresh directory — separate from the staging folder used during migration."/>
 
                 <TextBlock Style="{StaticResource FieldLabel}" Text="Working folder:"/>
-                <DockPanel Margin="0,0,0,8">
+                <DockPanel Margin="0,0,0,4">
                     <Button DockPanel.Dock="Right" Content="Browse..." Command="{Binding BrowseDailyWorkingCommand}"
                             Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" Padding="14,8"/>
                     <TextBox Style="{StaticResource DarkTextBox}" Text="{Binding DailyWorkingPath, UpdateSourceTrigger=PropertyChanged}"
                              FontFamily="{StaticResource MonoFont}"/>
                 </DockPanel>
+                <TextBlock Foreground="{StaticResource Text3Brush}" FontSize="11" Margin="0,0,0,10" TextWrapping="Wrap">
+                    <Run FontWeight="SemiBold">If the folder is empty</Run><Run xml:space="preserve"> — clone goes directly into it.  </Run>
+                    <Run FontWeight="SemiBold">If not empty</Run><Run xml:space="preserve"> — a subfolder named </Run>
+                    <Run Text="{Binding Context.ProjectName, Mode=OneWay}" FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource AccentHiBrush}"/>
+                    <Run xml:space="preserve"> is created automatically.</Run>
+                </TextBlock>
 
                 <!-- Status indicator -->
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
