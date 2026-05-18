@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -21,6 +22,8 @@ namespace CCToGitlabMgr.Views
         private static readonly Color OkColor = Color.FromRgb(0x3E, 0xCF, 0x8E);
         private static readonly Color WarnColor = Color.FromRgb(0xFB, 0xBF, 0x24);
         private static readonly Color DangerColor = Color.FromRgb(0xEF, 0x44, 0x44);
+
+        private static T Freeze<T>(T freezable) where T : Freezable { freezable.Freeze(); return freezable; }
 
         private static readonly Brush BgBrush = new SolidColorBrush(BgColor);
         private static readonly Brush SurfaceBrush = new SolidColorBrush(SurfaceColor);
@@ -335,8 +338,37 @@ namespace CCToGitlabMgr.Views
                 Padding = new Thickness(0)
             };
 
+            // Pre-create shared resources — never allocate inside the loop
+            var monoFont = new FontFamily("Cascadia Code, Consolas, Courier New");
+            var brFileHeader = Freeze(new SolidColorBrush(Color.FromArgb(0x20, 0x3B, 0x82, 0xF6)));
+            var brAddedFg   = Freeze(new SolidColorBrush(Color.FromRgb(0x6E, 0xE7, 0xB7)));
+            var brAddedBg   = Freeze(new SolidColorBrush(Color.FromArgb(0x18, 0x3E, 0xCF, 0x8E)));
+            var brRemovedFg = Freeze(new SolidColorBrush(Color.FromRgb(0xFC, 0xA5, 0xA5)));
+            var brRemovedBg = Freeze(new SolidColorBrush(Color.FromArgb(0x18, 0xEF, 0x44, 0x44)));
+            var brHunkFg    = Freeze(new SolidColorBrush(Color.FromRgb(0xA7, 0x8B, 0xFA)));
+            var brHunkBg    = Freeze(new SolidColorBrush(Color.FromArgb(0x10, 0xA7, 0x8B, 0xFA)));
+            var brDiffBg    = Freeze(new SolidColorBrush(Color.FromArgb(0x14, 0xFF, 0x6B, 0x35)));
+
+            const int MaxLines = 3000;
+            var allLines = diffOutput.Split(new[] { '\n' }, StringSplitOptions.None);
+            var truncated = allLines.Length > MaxLines;
+            var lines = truncated ? allLines.Take(MaxLines).ToArray() : allLines;
+
             var diffPanel = new StackPanel { Margin = new Thickness(0) };
-            var lines = diffOutput.Split(new[] { '\n' }, StringSplitOptions.None);
+
+            if (truncated)
+            {
+                diffPanel.Children.Add(new TextBlock
+                {
+                    Text = $"  ⚠ Showing first {MaxLines} of {allLines.Length} lines. Diff is large — consider committing in smaller chunks.",
+                    FontSize = 12,
+                    Foreground = Freeze(new SolidColorBrush(Color.FromRgb(0xFB, 0xBF, 0x24))),
+                    Background = Freeze(new SolidColorBrush(Color.FromArgb(0x18, 0xFB, 0xBF, 0x24))),
+                    Padding = new Thickness(20, 6, 20, 6),
+                    FontWeight = FontWeights.SemiBold,
+                    TextWrapping = TextWrapping.Wrap
+                });
+            }
 
             foreach (var rawLine in lines)
             {
@@ -344,7 +376,7 @@ namespace CCToGitlabMgr.Views
                 var lineBlock = new TextBlock
                 {
                     Text = line,
-                    FontFamily = new FontFamily("Cascadia Code, Consolas, Courier New"),
+                    FontFamily = monoFont,
                     FontSize = 12,
                     Padding = new Thickness(20, 2, 20, 2),
                     TextWrapping = TextWrapping.NoWrap
@@ -354,29 +386,29 @@ namespace CCToGitlabMgr.Views
                 {
                     lineBlock.Foreground = TextBrush;
                     lineBlock.FontWeight = FontWeights.Bold;
-                    lineBlock.Background = new SolidColorBrush(Color.FromArgb(0x20, 0x3B, 0x82, 0xF6));
+                    lineBlock.Background = brFileHeader;
                 }
                 else if (line.StartsWith("+"))
                 {
-                    lineBlock.Foreground = new SolidColorBrush(Color.FromRgb(0x6E, 0xE7, 0xB7));
-                    lineBlock.Background = new SolidColorBrush(Color.FromArgb(0x18, 0x3E, 0xCF, 0x8E));
+                    lineBlock.Foreground = brAddedFg;
+                    lineBlock.Background = brAddedBg;
                 }
                 else if (line.StartsWith("-"))
                 {
-                    lineBlock.Foreground = new SolidColorBrush(Color.FromRgb(0xFC, 0xA5, 0xA5));
-                    lineBlock.Background = new SolidColorBrush(Color.FromArgb(0x18, 0xEF, 0x44, 0x44));
+                    lineBlock.Foreground = brRemovedFg;
+                    lineBlock.Background = brRemovedBg;
                 }
                 else if (line.StartsWith("@@"))
                 {
-                    lineBlock.Foreground = new SolidColorBrush(Color.FromRgb(0xA7, 0x8B, 0xFA));
-                    lineBlock.Background = new SolidColorBrush(Color.FromArgb(0x10, 0xA7, 0x8B, 0xFA));
+                    lineBlock.Foreground = brHunkFg;
+                    lineBlock.Background = brHunkBg;
                     lineBlock.FontWeight = FontWeights.SemiBold;
                 }
                 else if (line.StartsWith("diff "))
                 {
                     lineBlock.Foreground = AccentBrush;
                     lineBlock.FontWeight = FontWeights.Bold;
-                    lineBlock.Background = new SolidColorBrush(Color.FromArgb(0x14, 0xFF, 0x6B, 0x35));
+                    lineBlock.Background = brDiffBg;
                     lineBlock.Padding = new Thickness(20, 8, 20, 8);
                     lineBlock.Margin = new Thickness(0, 4, 0, 0);
                 }
