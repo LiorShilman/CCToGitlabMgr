@@ -683,7 +683,11 @@ namespace CCToGitlabMgr.Views
             var accentInspect = new SolidColorBrush(Color.FromRgb(0x38, 0xBD, 0xF8));
 
             var win = CreateViewerWindow($"Repo Inspector — {label}", 800, 650, accentInspect);
-            var mainGrid = (Grid)((Border)win.Content).Child;
+            var outerBorder = CreateViewerBorder(accentInspect);
+            var mainGrid = new Grid();
+            mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            outerBorder.Child = mainGrid;
 
             // Title bar
             var titleBar = CreateTitleBar($"Repo Inspector — {label}", accentInspect, win);
@@ -815,6 +819,7 @@ namespace CCToGitlabMgr.Views
                 content.Children.Add(row);
             }
 
+            win.Content = outerBorder;
             win.ShowDialog();
         }
 
