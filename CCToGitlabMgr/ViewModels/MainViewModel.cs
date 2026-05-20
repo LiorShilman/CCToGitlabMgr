@@ -212,6 +212,30 @@ namespace CCToGitlabMgr.ViewModels
         // Step 7
         public AsyncRelayCommand RunVerifyCommand { get; private set; }
         public AsyncRelayCommand BrowseVerifyCommand { get; private set; }
+        public AsyncRelayCommand VerifyFixGitignoreCommand { get; private set; }
+        public AsyncRelayCommand VerifyFixCommitPushCommand { get; private set; }
+        public AsyncRelayCommand VerifyScanTrackedIgnoredCommand { get; private set; }
+        public AsyncRelayCommand VerifyRemoveCachedCommand { get; private set; }
+
+        private string _verifyFixCommitMessage = "fix: update gitignore and add missing files";
+        public string VerifyFixCommitMessage
+        {
+            get => _verifyFixCommitMessage;
+            set => SetProperty(ref _verifyFixCommitMessage, value);
+        }
+
+        public ObservableCollection<TrackedIgnoredFile> TrackedIgnoredFiles { get; }
+            = new ObservableCollection<TrackedIgnoredFile>();
+
+        public bool AllTrackedIgnoredSelected
+        {
+            get => TrackedIgnoredFiles.Count > 0 && TrackedIgnoredFiles.All(f => f.IsSelected);
+            set
+            {
+                foreach (var f in TrackedIgnoredFiles) f.IsSelected = value;
+                OnPropertyChanged(nameof(AllTrackedIgnoredSelected));
+            }
+        }
         public RelayCommand GenerateReadmeCommand { get; private set; }
         public RelayCommand SaveReadmeCommand { get; private set; }
         public RelayCommand LoadReadmeFileCommand { get; private set; }
@@ -361,6 +385,10 @@ namespace CCToGitlabMgr.ViewModels
             // Step 7
             RunVerifyCommand = new AsyncRelayCommand(RunVerifyAsync, () => !IsBusy);
             BrowseVerifyCommand = new AsyncRelayCommand(() => { BrowseFolder(p => Context.VerifyPath = p); return Task.CompletedTask; });
+            VerifyFixGitignoreCommand = new AsyncRelayCommand(VerifyFixGitignoreAsync, () => !IsBusy);
+            VerifyFixCommitPushCommand = new AsyncRelayCommand(VerifyFixCommitPushAsync, () => !IsBusy);
+            VerifyScanTrackedIgnoredCommand = new AsyncRelayCommand(VerifyScanTrackedIgnoredAsync, () => !IsBusy);
+            VerifyRemoveCachedCommand = new AsyncRelayCommand(VerifyRemoveCachedAsync, () => !IsBusy);
             GenerateReadmeCommand = new RelayCommand(GenerateReadme);
             SaveReadmeCommand = new RelayCommand(SaveReadme);
             LoadReadmeFileCommand = new RelayCommand(LoadReadmeFile);
@@ -1041,6 +1069,161 @@ namespace CCToGitlabMgr.ViewModels
                     AppendOutput("Clone FAILED.");
                     Steps[6].Status = "Error";
                 }
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        // === Verify Fix (fix staging and re-push without needing Daily Workflow) ===
+
+        private Task VerifyFixGitignoreAsync()
+        {
+            var path = Context.StagingPath;
+            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(Path.Combine(path, ".git")))
+            {
+                AppendOutput("ERROR: Staging folder is not a git repository. Run migration first.");
+                return Task.CompletedTask;
+            }
+            if (string.IsNullOrWhiteSpace(Context.GitignoreTemplate))
+            {
+                AppendOutput("ERROR: No .gitignore template selected. Go to Step 4.");
+                return Task.CompletedTask;
+            }
+            var template = GitignoreTemplates.GetTemplate(Context.GitignoreTemplate);
+            var dest = Path.Combine(path, ".gitignore");
+            File.WriteAllText(dest, template);
+            AppendOutput($".gitignore updated at: {dest}");
+            AppendOutput("Review it, add any exceptions needed, then click 'Stage All + Commit + Push'.");
+            return Task.CompletedTask;
+        }
+
+        private async Task VerifyFixCommitPushAsync()
+        {
+            var path = Context.StagingPath;
+            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(Path.Combine(path, ".git")))
+            {
+                AppendOutput("ERROR: Staging folder is not a git repository. Run migration first.");
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(VerifyFixCommitMessage))
+            {
+                AppendOutput("ERROR: Commit message is empty.");
+                return;
+            }
+
+            IsBusy = true;
+            BusyMessage = "Staging fix and pushing...";
+            _cts = new CancellationTokenSource();
+            try
+            {
+                AppendOutput($"Working in: {path}");
+
+                var statusResult = await Git.StatusAsync(path, _cts.Token);
+                if (statusResult.Success && string.IsNullOrWhiteSpace(statusResult.Output?.Trim().Replace("nothing to commit", "").Trim()))
+                {
+                    AppendOutput("Nothing to commit — working tree is clean.");
+                    return;
+                }
+
+                var addResult = await Git.AddAllAsync(path, _cts.Token);
+                if (!addResult.Success) { AppendOutput($"Stage failed: {addResult.Error}"); return; }
+
+                var commitResult = await Git.CommitAsync(path, VerifyFixCommitMessage, _cts.Token);
+                if (!commitResult.Success) { AppendOutput($"Commit failed: {commitResult.Error}"); return; }
+
+                var branch = Context.DefaultBranch ?? "main";
+                var pushResult = await Git.PushAsync(path, "origin", branch, true, _cts.Token);
+                if (pushResult.Success)
+                {
+                    AppendOutput("Fix pushed successfully. Run 'Clone and Verify' again to re-test.");
+                    VerifyFixCommitMessage = "fix: update gitignore and add missing files";
+                }
+                else
+                    AppendOutput($"Push failed: {pushResult.Error}");
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        private async Task VerifyScanTrackedIgnoredAsync()
+        {
+            var path = Context.StagingPath;
+            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(Path.Combine(path, ".git")))
+            {
+                AppendOutput("ERROR: Staging folder is not a git repository. Run migration first.");
+                return;
+            }
+
+            IsBusy = true;
+            BusyMessage = "Scanning for accidentally tracked files...";
+            _cts = new CancellationTokenSource();
+            try
+            {
+                var result = await Git.GetTrackedIgnoredFilesAsync(path, _cts.Token);
+                TrackedIgnoredFiles.Clear();
+
+                if (!result.Success)
+                {
+                    AppendOutput($"Scan failed: {result.Error}");
+                    return;
+                }
+
+                var files = (result.Output ?? "")
+                    .Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(f => f.Trim())
+                    .Where(f => !string.IsNullOrEmpty(f))
+                    .OrderBy(f => f)
+                    .ToList();
+
+                if (files.Count == 0)
+                {
+                    AppendOutput("No accidentally tracked files found. Repo is clean.");
+                    return;
+                }
+
+                foreach (var f in files)
+                    TrackedIgnoredFiles.Add(new TrackedIgnoredFile { FilePath = f, IsSelected = true });
+
+                OnPropertyChanged(nameof(AllTrackedIgnoredSelected));
+                AppendOutput($"Found {files.Count} tracked file(s) covered by .gitignore. Review and click 'Remove Selected from Git'.");
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        private async Task VerifyRemoveCachedAsync()
+        {
+            var path = Context.StagingPath;
+            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(Path.Combine(path, ".git")))
+            {
+                AppendOutput("ERROR: Staging folder is not a git repository.");
+                return;
+            }
+
+            var selected = TrackedIgnoredFiles.Where(f => f.IsSelected).Select(f => f.FilePath).ToList();
+            if (selected.Count == 0)
+            {
+                AppendOutput("No files selected.");
+                return;
+            }
+
+            IsBusy = true;
+            BusyMessage = $"Removing {selected.Count} file(s) from git tracking...";
+            _cts = new CancellationTokenSource();
+            try
+            {
+                var result = await Git.RemoveCachedAsync(path, selected, _cts.Token);
+                if (result.Success)
+                {
+                    AppendOutput($"Removed {selected.Count} file(s) from git tracking (files kept locally).");
+                    AppendOutput("Now click 'Stage All + Commit + Push' to apply the change to the remote.");
+                    foreach (var f in TrackedIgnoredFiles.Where(f => f.IsSelected).ToList())
+                        TrackedIgnoredFiles.Remove(f);
+                    OnPropertyChanged(nameof(AllTrackedIgnoredSelected));
+                    VerifyFixCommitMessage = $"fix: remove {selected.Count} accidentally tracked file(s) from git";
+                }
+                else
+                    AppendOutput($"Remove failed: {result.Error}");
             }
             catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
             finally { IsBusy = false; }

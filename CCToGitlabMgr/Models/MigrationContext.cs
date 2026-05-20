@@ -24,6 +24,14 @@ namespace CCToGitlabMgr.Models
     }
 
 
+    public class TrackedIgnoredFile : BaseViewModel
+    {
+        public string FilePath { get; set; }
+
+        private bool _isSelected = true;
+        public bool IsSelected { get => _isSelected; set => SetProperty(ref _isSelected, value); }
+    }
+
     public class MigrationContext : BaseViewModel
     {
         // == Step 1: Git Config ==

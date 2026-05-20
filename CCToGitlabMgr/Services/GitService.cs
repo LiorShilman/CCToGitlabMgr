@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -140,6 +141,19 @@ namespace CCToGitlabMgr.Services
             var parentDir = Path.GetDirectoryName(targetDir);
             var folderName = Path.GetFileName(targetDir);
             return await _runner.RunGitAsync($"clone \"{url}\" \"{folderName}\"", parentDir, ct);
+        }
+
+        public async Task<CommandResult> GetTrackedIgnoredFilesAsync(string workingDir, CancellationToken ct = default)
+        {
+            Output?.Invoke("> git ls-files -i -c --exclude-standard");
+            return await _runner.RunGitAsync("ls-files -i -c --exclude-standard", workingDir, ct);
+        }
+
+        public async Task<CommandResult> RemoveCachedAsync(string workingDir, IEnumerable<string> files, CancellationToken ct = default)
+        {
+            var quoted = string.Join(" ", files.Select(f => $"\"{f}\""));
+            Output?.Invoke($"> git rm --cached {quoted}");
+            return await _runner.RunGitAsync($"rm --cached -r {quoted}", workingDir, ct);
         }
 
         // === Branch ===

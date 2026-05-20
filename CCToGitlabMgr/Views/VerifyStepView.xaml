@@ -41,6 +41,122 @@
             </StackPanel>
         </Border>
 
+        <!-- Fix & Re-push (when issues found during verify) -->
+        <Border Style="{StaticResource CardBorder}" BorderBrush="{StaticResource WarnBrush}" BorderThickness="1">
+            <StackPanel>
+                <DockPanel Margin="0,0,0,8">
+                    <TextBlock DockPanel.Dock="Left" Text="⚠" FontSize="16" Foreground="{StaticResource WarnBrush}"
+                               VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <TextBlock Text="Fix &amp; Re-push (if verification failed)" FontSize="16" FontWeight="Bold"
+                               Foreground="{StaticResource Text0Brush}" VerticalAlignment="Center"/>
+                </DockPanel>
+                <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,16"
+                           Text="Found missing files or a wrong .gitignore? Fix directly from the staging folder — no need to go to Daily Workflow."/>
+
+                <!-- Step 1: Update gitignore -->
+                <Border Background="{StaticResource SurfaceBrush}" CornerRadius="6" Padding="14,10" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBlock Foreground="{StaticResource AccentHiBrush}" FontSize="13" FontWeight="Bold" Margin="0,0,0,6">
+                            <Run Text="1."/>
+                            <Run Text="  Update .gitignore from current template"/>
+                        </TextBlock>
+                        <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,8"
+                                   Text="Rewrites .gitignore in the staging folder using the template from Step 4. Then manually add exceptions for any missing files before committing."/>
+                        <Button Content="Place Updated .gitignore" Command="{Binding VerifyFixGitignoreCommand}"
+                                Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Padding="14,7" FontSize="12"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Step 2: Commit and push -->
+                <Border Background="{StaticResource SurfaceBrush}" CornerRadius="6" Padding="14,10" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBlock Foreground="{StaticResource AccentHiBrush}" FontSize="13" FontWeight="Bold" Margin="0,0,0,6">
+                            <Run Text="2."/>
+                            <Run Text="  Stage All + Commit + Push to remote"/>
+                        </TextBlock>
+                        <TextBlock Style="{StaticResource FieldLabel}" Text="Commit Message:"/>
+                        <TextBox Style="{StaticResource DarkTextBox}" Margin="0,0,0,8"
+                                 Text="{Binding VerifyFixCommitMessage, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Button Content="Stage All + Commit + Push" Command="{Binding VerifyFixCommitPushCommand}"
+                                Style="{StaticResource AccentButton}" HorizontalAlignment="Left" Padding="14,7" FontSize="12"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Step 3: Re-verify -->
+                <Border Background="{StaticResource SurfaceBrush}" CornerRadius="6" Padding="14,10">
+                    <StackPanel>
+                        <TextBlock Foreground="{StaticResource AccentHiBrush}" FontSize="13" FontWeight="Bold" Margin="0,0,0,6">
+                            <Run Text="3."/>
+                            <Run Text="  Re-run Clone and Verify above"/>
+                        </TextBlock>
+                        <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="12" TextWrapping="Wrap"
+                                   Text="After pushing, delete the old verify folder and click 'Clone and Verify' again to confirm the fix."/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <!-- Remove accidentally tracked files -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Remove Accidentally Tracked Files" FontSize="16" FontWeight="Bold"
+                           Foreground="{StaticResource Text0Brush}" Margin="0,0,0,8"/>
+                <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,14"
+                           Text="Scans the staging repo for files that are tracked by git but should be ignored by .gitignore. Select files to remove from git (files stay on disk)."/>
+
+                <Button Content="Scan for Accidentally Tracked Files" Command="{Binding VerifyScanTrackedIgnoredCommand}"
+                        Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left"
+                        Padding="14,8" FontSize="12" Margin="0,0,0,12"/>
+
+                <!-- Results list -->
+                <StackPanel Visibility="{Binding TrackedIgnoredFiles.Count, Converter={StaticResource CountToVis}}">
+
+                    <!-- Select All header -->
+                    <Border Background="{StaticResource SurfaceBrush}" CornerRadius="6" Padding="10,7" Margin="0,0,0,4">
+                        <StackPanel Orientation="Horizontal">
+                            <CheckBox IsChecked="{Binding AllTrackedIgnoredSelected, Mode=TwoWay}"
+                                      Style="{StaticResource DarkCheckBox}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <TextBlock Text="Select All" Foreground="{StaticResource Text2Brush}"
+                                       FontSize="12" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- File list -->
+                    <ItemsControl ItemsSource="{Binding TrackedIgnoredFiles}" MaxHeight="250">
+                        <ItemsControl.Template>
+                            <ControlTemplate>
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <ItemsPresenter/>
+                                </ScrollViewer>
+                            </ControlTemplate>
+                        </ItemsControl.Template>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="{StaticResource SurfaceBrush}" CornerRadius="4"
+                                        Padding="10,6" Margin="0,2">
+                                    <StackPanel Orientation="Horizontal">
+                                        <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center"
+                                                  Style="{StaticResource DarkCheckBox}" Margin="0,0,10,0"/>
+                                        <TextBlock Text="{Binding FilePath}" VerticalAlignment="Center"
+                                                   FontFamily="{StaticResource MonoFont}" FontSize="12"
+                                                   Foreground="{StaticResource DangerBrush}"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Button Content="Remove Selected from Git (keep files locally)"
+                            Command="{Binding VerifyRemoveCachedCommand}"
+                            Style="{StaticResource DangerButton}" HorizontalAlignment="Left"
+                            Padding="14,8" FontSize="12" Margin="0,10,0,0"/>
+
+                    <TextBlock Foreground="{StaticResource Text3Brush}" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap"
+                               Text="After removing, use 'Stage All + Commit + Push' in the Fix card above to update the remote."/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
         <!-- Manual Steps -->
         <Border Style="{StaticResource CardBorder}">
             <StackPanel>

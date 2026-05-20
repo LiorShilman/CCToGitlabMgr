@@ -13,6 +13,7 @@
             <conv:EqualityConverter x:Key="EqualConv"/>
             <conv:InverseBoolConverter x:Key="InverseBool"/>
             <conv:StringToVisibilityConverter x:Key="NullToVis"/>
+            <conv:CountToVisibilityConverter x:Key="CountToVis"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>
