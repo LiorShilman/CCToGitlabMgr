@@ -247,6 +247,17 @@
             </StackPanel>
         </Border>
 
+        <!-- Repo Inspector -->
+        <Border Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Text="Repository Inspector" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Text0Brush}" Margin="0,0,0,8"/>
+                <TextBlock Foreground="{StaticResource Text2Brush}" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,14"
+                           Text="Analyse tracked files — total size, largest files, breakdown by extension."/>
+                <Button Content="Inspect Working Repo" Command="{Binding DailyRepoInspectorCommand}"
+                        Style="{StaticResource SecondaryButton}" Padding="16,8" FontSize="13" HorizontalAlignment="Left"/>
+            </StackPanel>
+        </Border>
+
         <!-- Workflow Guide -->
         <Border Background="#143B82F6" BorderBrush="#4D3B82F6" BorderThickness="1" CornerRadius="8" Padding="18,14">
             <DockPanel>

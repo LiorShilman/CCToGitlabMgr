@@ -677,6 +677,155 @@ namespace CCToGitlabMgr.Views
         }
 
         /// <summary>
+        public static void ShowRepoInspector(string label, List<(string RelPath, long Size)> files)
+        {
+            const int TopN = 25;
+            var accentInspect = new SolidColorBrush(Color.FromRgb(0x38, 0xBD, 0xF8));
+
+            var win = CreateViewerWindow($"Repo Inspector — {label}", 800, 650, accentInspect);
+            var mainGrid = (Grid)((Border)win.Content).Child;
+
+            // Title bar
+            var titleBar = CreateTitleBar($"Repo Inspector — {label}", accentInspect, win);
+            Grid.SetRow(titleBar, 0);
+            mainGrid.Children.Add(titleBar);
+
+            var scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Padding = new Thickness(20, 16, 20, 16) };
+            var content = new StackPanel();
+            scroll.Content = content;
+            Grid.SetRow(scroll, 1);
+            mainGrid.Children.Add(scroll);
+
+            long totalSize = files.Sum(f => f.Size);
+            int totalFiles = files.Count;
+            long maxSize = files.Count > 0 ? files.Max(f => f.Size) : 1;
+
+            // ── Summary header ──
+            var summaryBorder = new Border
+            {
+                Background = SurfaceBrush,
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(16, 12, 16, 12),
+                Margin = new Thickness(0, 0, 0, 16)
+            };
+            var summaryGrid = new Grid();
+            summaryGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            summaryGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            summaryGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            void AddStat(int col, string val, string lbl)
+            {
+                var sp = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center };
+                sp.Children.Add(new TextBlock { Text = val, FontSize = 22, FontWeight = FontWeights.Bold, Foreground = accentInspect, HorizontalAlignment = HorizontalAlignment.Center });
+                sp.Children.Add(new TextBlock { Text = lbl, FontSize = 12, Foreground = Text2Brush, HorizontalAlignment = HorizontalAlignment.Center });
+                Grid.SetColumn(sp, col);
+                summaryGrid.Children.Add(sp);
+            }
+
+            AddStat(0, totalFiles.ToString("N0"), "Tracked Files");
+            AddStat(1, FormatBytes(totalSize), "Total Size");
+            AddStat(2, files.Count > 0 ? System.IO.Path.GetExtension(files.OrderByDescending(f => f.Size).First().RelPath).TrimStart('.').ToUpper() : "—", "Largest Type");
+            summaryBorder.Child = summaryGrid;
+            content.Children.Add(summaryBorder);
+
+            // ── Top N largest files ──
+            content.Children.Add(new TextBlock
+            {
+                Text = $"Top {Math.Min(TopN, totalFiles)} Largest Files",
+                FontSize = 14, FontWeight = FontWeights.Bold,
+                Foreground = TextBrush, Margin = new Thickness(0, 0, 0, 8)
+            });
+
+            foreach (var (rel, size) in files.OrderByDescending(f => f.Size).Take(TopN))
+            {
+                double ratio = maxSize > 0 ? (double)size / maxSize : 0;
+                var row = new StackPanel { Margin = new Thickness(0, 0, 0, 4) };
+
+                var header = new DockPanel();
+                var sizeBlock = new TextBlock
+                {
+                    Text = FormatBytes(size),
+                    Foreground = accentInspect, FontSize = 12,
+                    FontFamily = new FontFamily("Consolas"),
+                    Width = 72,
+                    TextAlignment = TextAlignment.Right
+                };
+                DockPanel.SetDock(sizeBlock, Dock.Right);
+                header.Children.Add(sizeBlock);
+                header.Children.Add(new TextBlock
+                {
+                    Text = rel, Foreground = Text2Brush, FontSize = 12,
+                    FontFamily = new FontFamily("Consolas"),
+                    TextTrimming = TextTrimming.CharacterEllipsis
+                });
+                row.Children.Add(header);
+
+                var barBg = new Border { Background = new SolidColorBrush(Color.FromArgb(0x20, 0xFF, 0xFF, 0xFF)), Height = 4, CornerRadius = new CornerRadius(2), Margin = new Thickness(0, 2, 0, 0) };
+                var barFill = new Border
+                {
+                    Background = Freeze(new SolidColorBrush(Color.FromArgb(0xC0, 0x38, 0xBD, 0xF8))),
+                    Height = 4, CornerRadius = new CornerRadius(2),
+                    HorizontalAlignment = HorizontalAlignment.Left
+                };
+                barFill.Loaded += (s, e) => barFill.Width = barBg.ActualWidth * ratio;
+                barBg.SizeChanged += (s, e) => barFill.Width = barBg.ActualWidth * ratio;
+                var barGrid = new Grid();
+                barGrid.Children.Add(barBg);
+                barGrid.Children.Add(barFill);
+                row.Children.Add(barGrid);
+                content.Children.Add(row);
+            }
+
+            // ── By extension ──
+            content.Children.Add(new TextBlock
+            {
+                Text = "By File Type",
+                FontSize = 14, FontWeight = FontWeights.Bold,
+                Foreground = TextBrush, Margin = new Thickness(0, 20, 0, 8)
+            });
+
+            var byExt = files
+                .GroupBy(f => (System.IO.Path.GetExtension(f.RelPath) ?? "").ToLower())
+                .Select(g => (Ext: string.IsNullOrEmpty(g.Key) ? "(no ext)" : g.Key, Count: g.Count(), Size: g.Sum(x => x.Size)))
+                .OrderByDescending(x => x.Size)
+                .Take(15)
+                .ToList();
+
+            long maxExtSize = byExt.Count > 0 ? byExt.Max(x => x.Size) : 1;
+
+            foreach (var (ext, count, size) in byExt)
+            {
+                double ratio = maxExtSize > 0 ? (double)size / maxExtSize : 0;
+                var row = new StackPanel { Margin = new Thickness(0, 0, 0, 4) };
+                var header = new DockPanel();
+
+                var right = new StackPanel { Orientation = Orientation.Horizontal };
+                right.Children.Add(new TextBlock { Text = $"{count} files", Foreground = Text2Brush, FontSize = 11, Margin = new Thickness(0, 0, 12, 0) });
+                right.Children.Add(new TextBlock { Text = FormatBytes(size), Foreground = accentInspect, FontSize = 12, FontFamily = new FontFamily("Consolas"), Width = 72, TextAlignment = TextAlignment.Right });
+                DockPanel.SetDock(right, Dock.Right);
+                header.Children.Add(right);
+                header.Children.Add(new TextBlock { Text = ext, Foreground = TextBrush, FontSize = 12, FontWeight = FontWeights.SemiBold });
+                row.Children.Add(header);
+
+                var barBg = new Border { Background = new SolidColorBrush(Color.FromArgb(0x20, 0xFF, 0xFF, 0xFF)), Height = 4, CornerRadius = new CornerRadius(2), Margin = new Thickness(0, 2, 0, 0) };
+                var barFill = new Border { Background = Freeze(new SolidColorBrush(Color.FromArgb(0xC0, 0x3E, 0xCF, 0x8E))), Height = 4, CornerRadius = new CornerRadius(2), HorizontalAlignment = HorizontalAlignment.Left };
+                barBg.SizeChanged += (s, e) => barFill.Width = barBg.ActualWidth * ratio;
+                var barGrid = new Grid(); barGrid.Children.Add(barBg); barGrid.Children.Add(barFill);
+                row.Children.Add(barGrid);
+                content.Children.Add(row);
+            }
+
+            win.ShowDialog();
+        }
+
+        private static string FormatBytes(long bytes)
+        {
+            if (bytes >= 1_073_741_824) return $"{bytes / 1_073_741_824.0:F1} GB";
+            if (bytes >= 1_048_576) return $"{bytes / 1_048_576.0:F1} MB";
+            if (bytes >= 1_024) return $"{bytes / 1_024.0:F1} KB";
+            return $"{bytes} B";
+        }
+
         /// Show a styled tags list viewer.
         /// </summary>
         public static void ShowTagsViewer(string tagsOutput)

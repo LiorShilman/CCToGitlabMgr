@@ -216,6 +216,8 @@ namespace CCToGitlabMgr.ViewModels
         public AsyncRelayCommand VerifyFixCommitPushCommand { get; private set; }
         public AsyncRelayCommand VerifyScanTrackedIgnoredCommand { get; private set; }
         public AsyncRelayCommand VerifyRemoveCachedCommand { get; private set; }
+        public AsyncRelayCommand VerifyRepoInspectorCommand { get; private set; }
+        public AsyncRelayCommand DailyRepoInspectorCommand { get; private set; }
 
         private string _verifyFixCommitMessage = "fix: update gitignore and add missing files";
         public string VerifyFixCommitMessage
@@ -389,6 +391,8 @@ namespace CCToGitlabMgr.ViewModels
             VerifyFixCommitPushCommand = new AsyncRelayCommand(VerifyFixCommitPushAsync, () => !IsBusy);
             VerifyScanTrackedIgnoredCommand = new AsyncRelayCommand(VerifyScanTrackedIgnoredAsync, () => !IsBusy);
             VerifyRemoveCachedCommand = new AsyncRelayCommand(VerifyRemoveCachedAsync, () => !IsBusy);
+            VerifyRepoInspectorCommand = new AsyncRelayCommand(() => RepoInspectorAsync(Context.StagingPath, "Staging"), () => !IsBusy);
+            DailyRepoInspectorCommand = new AsyncRelayCommand(() => RepoInspectorAsync(DailyWorkingPath, "Working Directory"), () => !IsBusy);
             GenerateReadmeCommand = new RelayCommand(GenerateReadme);
             SaveReadmeCommand = new RelayCommand(SaveReadme);
             LoadReadmeFileCommand = new RelayCommand(LoadReadmeFile);
@@ -1224,6 +1228,47 @@ namespace CCToGitlabMgr.ViewModels
                 }
                 else
                     AppendOutput($"Remove failed: {result.Error}");
+            }
+            catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
+            finally { IsBusy = false; }
+        }
+
+        // === Repo Inspector ===
+
+        private async Task RepoInspectorAsync(string repoPath, string label)
+        {
+            if (string.IsNullOrWhiteSpace(repoPath) || !Directory.Exists(Path.Combine(repoPath, ".git")))
+            {
+                AppendOutput($"ERROR: {label} is not a git repository.");
+                return;
+            }
+
+            IsBusy = true;
+            BusyMessage = "Scanning repository files...";
+            _cts = new CancellationTokenSource();
+            try
+            {
+                var result = await Git.GetTrackedFilesAsync(repoPath, _cts.Token);
+                if (!result.Success) { AppendOutput($"Scan failed: {result.Error}"); return; }
+
+                var fileEntries = await Task.Run(() =>
+                {
+                    return (result.Output ?? "")
+                        .Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
+                        .Select(f => f.Trim())
+                        .Where(f => !string.IsNullOrEmpty(f))
+                        .Select(rel =>
+                        {
+                            var full = Path.Combine(repoPath, rel.Replace('/', '\\'));
+                            long size = 0;
+                            try { if (File.Exists(full)) size = new FileInfo(full).Length; } catch { }
+                            return (RelPath: rel, Size: size);
+                        })
+                        .ToList();
+                }, _cts.Token);
+
+                IsBusy = false;
+                Views.StyledDialog.ShowRepoInspector(label, fileEntries);
             }
             catch (Exception ex) { AppendOutput($"ERROR: {ex.Message}"); }
             finally { IsBusy = false; }

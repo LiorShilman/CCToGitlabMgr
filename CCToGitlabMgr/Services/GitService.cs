@@ -63,6 +63,12 @@ namespace CCToGitlabMgr.Services
             return await _runner.RunGitAsync($"branch -M {branchName}", workingDir, ct);
         }
 
+        public async Task<CommandResult> GetTrackedFilesAsync(string workingDir, CancellationToken ct = default)
+        {
+            Output?.Invoke("> git ls-files");
+            return await _runner.RunGitAsync("ls-files", workingDir, ct);
+        }
+
         // === Staging & Status ===
 
         public async Task<CommandResult> StatusAsync(string workingDir, CancellationToken ct = default)
