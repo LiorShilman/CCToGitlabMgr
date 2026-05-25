@@ -27,6 +27,8 @@ namespace CCToGitlabMgr.Models
     public class TrackedIgnoredFile : BaseViewModel
     {
         public string FilePath { get; set; }
+        public bool IsDirectory { get; set; }
+        public string DisplayPath => IsDirectory ? $"[dir]  {FilePath}" : FilePath;
 
         private bool _isSelected = true;
         public bool IsSelected { get => _isSelected; set => SetProperty(ref _isSelected, value); }

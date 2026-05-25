@@ -162,6 +162,106 @@ namespace CCToGitlabMgr.Services
             return await _runner.RunGitAsync($"rm --cached -r {quoted}", workingDir, ct);
         }
 
+        /// <summary>
+        /// Reads .gitignore for negation lines (!pattern), finds matching files on disk
+        /// that are not yet tracked by git. These are candidates for 'git add -f'.
+        /// </summary>
+        public async Task<List<string>> GetUntrackedExceptionFilesAsync(string workingDir, CancellationToken ct = default)
+        {
+            var gitignorePath = Path.Combine(workingDir, ".gitignore");
+            if (!File.Exists(gitignorePath))
+                return new List<string>();
+
+            // Extract negation patterns (lines starting with !, but not !!)
+            var patterns = File.ReadAllLines(gitignorePath)
+                .Select(l => l.Trim())
+                .Where(l => l.StartsWith("!") && !l.StartsWith("!!"))
+                .Select(l => l.Substring(1).Trim().TrimStart('/'))
+                .Where(l => !string.IsNullOrEmpty(l))
+                .ToList();
+
+            if (patterns.Count == 0)
+                return new List<string>();
+
+            // Get already-tracked files
+            Output?.Invoke("> git ls-files");
+            var tracked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var trackedResult = await _runner.RunGitAsync("ls-files", workingDir, ct);
+            if (trackedResult.Success && !string.IsNullOrEmpty(trackedResult.Output))
+            {
+                foreach (var line in trackedResult.Output.Split('\n'))
+                {
+                    var t = line.Trim();
+                    if (!string.IsNullOrEmpty(t)) tracked.Add(t);
+                }
+            }
+
+            // Build set of tracked directories (prefix-based)
+            var trackedDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var t in tracked)
+            {
+                var parts = t.Split('/');
+                for (int i = 1; i < parts.Length; i++)
+                    trackedDirs.Add(string.Join("/", parts.Take(i)));
+            }
+
+            var candidates = new List<string>();
+            foreach (var pattern in patterns)
+            {
+                try
+                {
+                    var normalized = pattern.TrimEnd('/').Replace('/', Path.DirectorySeparatorChar);
+                    bool trailingSlash = pattern.EndsWith("/"); // pattern explicitly targets a directory
+
+                    string searchDir = workingDir;
+                    string itemPattern = normalized;
+
+                    var lastSep = normalized.LastIndexOf(Path.DirectorySeparatorChar);
+                    if (lastSep >= 0)
+                    {
+                        searchDir = Path.Combine(workingDir, normalized.Substring(0, lastSep));
+                        itemPattern = normalized.Substring(lastSep + 1);
+                    }
+
+                    if (!Directory.Exists(searchDir)) continue;
+
+                    // Check matching directories first (pattern ends with / or exact dir match)
+                    foreach (var dir in Directory.GetDirectories(searchDir, itemPattern,
+                             lastSep >= 0 ? SearchOption.TopDirectoryOnly : SearchOption.AllDirectories))
+                    {
+                        var rel = dir.Substring(workingDir.Length).TrimStart(Path.DirectorySeparatorChar)
+                                     .Replace(Path.DirectorySeparatorChar, '/');
+                        // A directory counts as "tracked" if any files inside are tracked
+                        if (!trackedDirs.Contains(rel) && !tracked.Any(t => t.StartsWith(rel + "/")))
+                            candidates.Add(rel + "/");  // trailing slash marks it as a directory
+                    }
+
+                    // Check matching files (skip if pattern explicitly targeted a directory)
+                    if (!trailingSlash)
+                    {
+                        var searchOpt = lastSep >= 0 ? SearchOption.TopDirectoryOnly : SearchOption.AllDirectories;
+                        foreach (var file in Directory.GetFiles(searchDir, itemPattern, searchOpt))
+                        {
+                            var rel = file.Substring(workingDir.Length).TrimStart(Path.DirectorySeparatorChar)
+                                          .Replace(Path.DirectorySeparatorChar, '/');
+                            if (!tracked.Contains(rel))
+                                candidates.Add(rel);
+                        }
+                    }
+                }
+                catch { /* skip invalid patterns */ }
+            }
+
+            return candidates.Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(f => f).ToList();
+        }
+
+        public async Task<CommandResult> ForceAddFilesAsync(string workingDir, IEnumerable<string> files, CancellationToken ct = default)
+        {
+            var quoted = string.Join(" ", files.Select(f => $"\"{f}\""));
+            Output?.Invoke($"> git add -f {quoted}");
+            return await _runner.RunGitAsync($"add -f {quoted}", workingDir, ct);
+        }
+
         // === Branch ===
 
         public async Task<CommandResult> CheckoutAsync(string workingDir, string branch, bool create = false, CancellationToken ct = default)
